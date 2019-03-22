@@ -7,5 +7,6 @@ scalaVersion := "2.11.6"
 libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % "2.4.0" % "provided",
   "org.apache.spark" %% "spark-sql" % "2.4.0",
-  "org.apache.spark" %% "spark-mllib" % "2.4.0"  
+  "org.apache.spark" %% "spark-mllib" % "2.4.0",
+  "org.locationtech.jts" % "jts-core" % "1.15.0"
 )
