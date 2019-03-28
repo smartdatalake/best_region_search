@@ -23,6 +23,7 @@ import org.locationtech.jts.geom.PrecisionModel;
 
 import matt.POI;
 import matt.SpatialObject;
+import matt.SpatialObjectIdx;
 import matt.Grid;
 import matt.ca.BCAFinder;
 import matt.ca.BCAIndexProgressive;
@@ -41,27 +42,53 @@ import scala.collection.mutable.ListBuffer
 
 object OnestepAlgo {
 
-  def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, decayConstant: Double, topk: Int, finalAnswers: List[POI]): (Int, List[SpatialObject]) = {
-    input;
+  def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, decayConstant: Double, topk: Int, finalAnswers: List[POI]): (Int, List[SpatialObjectIdx]) = {
+
+    val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
+
+    val scoreFunction = new ScoreFunctionCount[POI]();
+
+    val utilityScoreFunction = new UtilityScoreFunction();
+
+    val bcaFinder = new BCAIndexProgressiveDivExhaustive(decayConstant, utilityScoreFunction);
+
+    val bca = bcaFinder.findBestCatchmentAreas(pois, eps, topk, scoreFunction).toList;
+
+    val index = buildIndex(bca)
+
+    (input._1, index);
   }
 
-  def extractNode(long: Any, lat: Any, nodes: Int, minmaxLong: (Any, Any), minmaxLat: (Any, Any)): Int = {
-    5;
+  def overlap(obj1: SpatialObject, obj2: SpatialObject): Boolean = {
+    true;
   }
 
-  def rowToPOI(thisRow: Row, geometryFactory: GeometryFactory): POI = {
+  def buildIndex(bca: List[SpatialObject]): List[SpatialObjectIdx] = {
 
-    val keywords = thisRow.getAs[String]("keywords").split(",").toList;
+    var finalIndex = ListBuffer[SpatialObjectIdx]();
 
-    val newPOI = new POI(thisRow.getAs("id"), thisRow.getAs("name"), thisRow.getAs("longtitude"), thisRow.getAs("latitude"), keywords, 0, geometryFactory);
+    var i = 0;
+    for (sp1 <- bca) {
 
-    println(newPOI);
+      // create new index entry
+      var newSpatialObjectIndex = new matt.SpatialObjectIdx(i);
 
-    newPOI
-  }
+      // find all overlapping rectangles with this rectangle.
+      var j = 0;
+      for (sp2 <- bca) {
+        if (i != j && overlap(sp1, sp2) && sp2.compareTo(sp1) < 0) {
+          // if the other rectangle has a lower score then insert it to our dependency list.
+          newSpatialObjectIndex.addDependency(j);
+        }
+        j = j + 1;
+      }
 
-  def poiToKeyValue(x: Row, width: Int, minmaxLong: (Any, Any), minmaxLat: (Any, Any), geometryFactory: GeometryFactory): (Int, POI) = {
-    (extractNode(x.get(0), x.get(1), width, minmaxLong, minmaxLat), rowToPOI(x, geometryFactory: GeometryFactory))
+      finalIndex += newSpatialObjectIndex;
+
+      i = i + 1;
+    }
+
+    finalIndex.toList
   }
 
   //  def buildGraph(x: Row
@@ -75,22 +102,10 @@ object OnestepAlgo {
 
     import spark.implicits;
 
-    //		/* load configuration file */
-    //		val prop = new Properties();
-    //		prop.load(new FileInputStream("config.properties"));
-    //
-    //		val eps = prop.getProperty("ca-eps").toDouble;
-    //		val topk = prop.getProperty("ca-topk").toInt;
-    //		val distinct = prop.getProperty("ca-distinct").toBoolean;
-    //		val div = prop.getProperty("ca-div").toBoolean;
-    //		val exhaustive = prop.getProperty("ca-exhaustive").toBoolean
-    //		val decayConstant = prop.getProperty("ca-decay-constant").toDouble;
-    //		val printResults = true;
-
     val poiInputFile = "/cloud_store/olma/spark/input/osmpois-europe.csv";
 
     val eps = 0.001
-    val topk = 10
+    val topk = 50
     val decayConstant = 0.5
 
     val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load(poiInputFile);
@@ -123,7 +138,7 @@ object OnestepAlgo {
     // build index
 
     // calculate the local results at each node.
-    val resultGroupedPerNode = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, finalAnswers));
+    val resultGroupedPerNode = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, decayConstant, topk, finalAnswers));
 
     // sort all results together based on the value of each.
 
