@@ -5,17 +5,21 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.{ Encoder, Encoders }
-import org.apache.spark.sql.functions.{ when, lower, min, max }
+import org.apache.spark.sql.{Encoder, Encoders}
+import org.apache.spark.sql.functions.{lower, max, min, when}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.Row
 import org.apache.spark.rdd.RDD
+import java.io.FileInputStream
+import java.io.FileNotFoundException
+import java.io.IOException
+import java.lang.Math
+import java.text.ParseException
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.text.ParseException;
+import org.apache.spark.api.java.JavaRDD
+
+import scala.collection.immutable.HashMap;
 //import java.util.List;
 import java.util.Properties;
 
@@ -44,7 +48,7 @@ import matt.definitions.Generic
 
 object NstepAlgo {
 
-  def localAlgo(input: (Int, Iterable[POI]), eps: Double, decayConstant: Double, topk: Int, finalAnswers: List[POI]): (Int, List[SpatialObject]) = {
+  def localAlgo(input: (Int, Iterable[POI]), eps: Double, decayConstant: Double, topk: Int, finalAnswers: List[SpatialObject]): (Int, List[SpatialObject]) = {
 
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
 
@@ -62,46 +66,51 @@ object NstepAlgo {
     //    } else {
     val bcaFinder = new BCAIndexProgressive(distinct);
     //    }
-    val bca = bcaFinder.findBestCatchmentAreas(pois, eps, topk, scoreFunction).toList;
+    val bca = bcaFinder.findBestCatchmentAreas(pois, eps, topk, scoreFunction, finalAnswers).toList;
     (input._1, bca);
   }
 
-  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, decayConstant: Double, topk: Int) {
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, decayConstant: Double, K: Int) {
 
     //
-    var Ans = List[POI]();
+    var Ans = List[SpatialObject]();
 
     // this has to be iterated (each node has to calculate the best subset)
     var iteration = 0;
-    val currentK = topk;
-    while (Ans.length <= topk) {
+    val Kprime = 1;
+    while (Ans.length < K) {
 
       println("Current Iteration: " + iteration);
+      var localAnswers = List[SpatialObject]();
 
       // calculate the local results at each node.
-      val resultGroupedPerNode = nodeToPoint.groupByKey().map(x => localAlgo(x, eps, decayConstant, Math.min(topk, currentK), Ans));
+      val resultGroupedPerNode = nodeToPoint.groupByKey().map(x => localAlgo(x, eps, decayConstant, Math.min(Kprime, K - Ans.size), Ans));
 
-      // tranform (node->List) to full List
-      //      val localAnswers = resultGroupedPerNode.flatMapValues(f);
-      val localAnswers = List[POI]();
+      localAnswers = resultGroupedPerNode.flatMap(x => x._2).collect().toList
 
-      // sort all results together based on the value of each.
-      var i = 0;
-      var roundAnswers = ListBuffer[POI]();
-      breakable {
-        while (i < Math.min(topk, currentK)) {
+      localAnswers = localAnswers.sortBy(_.getScore).reverse
 
-          // if localAnswers[i] overlaps with any result in roundAnswers
-          if (Generic.intersectsList(localAnswers.get(i), roundAnswers)) {
-            break;
-          } else {
-            val temp = localAnswers.get(i);
-            roundAnswers += temp;
-          }
+      var roundAnswers = ListBuffer[SpatialObject]()
+
+
+      val myList = resultGroupedPerNode.collect.toList
+      var pos = 0
+      var mm = Math.min(Kprime, K - Ans.size)
+
+      while (pos < mm) {
+        if (Generic.intersectsList(localAnswers.get(pos), roundAnswers)) {
+          break;
+        } else {
+          val temp = localAnswers.get(pos);
+          roundAnswers += temp;
+
         }
+        pos += 1
       }
-      Ans = Ans.++(roundAnswers);
+println(Ans)
 
+      Ans = Ans.++(roundAnswers);
+      mm = Math.min(Kprime, K - Ans.size)
       iteration = iteration + 1;
     }
 

@@ -97,9 +97,9 @@ object OnestepAlgo {
     var Ans = List[POI]();
 
     val currentK = topk;
-    
-    val resultGroupedPerNode = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, decayConstant, Math.min(topk, currentK), Ans));
-    
+    nodeToPoint.collect().foreach(println)
+    val resultGroupedPerNode = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, decayConstant, topk, Ans));
+    println(resultGroupedPerNode.collect())
     // combine the graphs into one.
   }
 }

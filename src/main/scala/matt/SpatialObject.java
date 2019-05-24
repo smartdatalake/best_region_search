@@ -1,5 +1,6 @@
 package matt;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,7 +11,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 
-public class SpatialObject implements Comparable<SpatialObject> {
+public class SpatialObject implements Comparable<SpatialObject> , Serializable {
 	private String id;
 	private String name;
 	private List<String> keywords;
@@ -31,7 +32,10 @@ public class SpatialObject implements Comparable<SpatialObject> {
 		this.geometry = geometry;
 		this.attributes = new HashMap<Object, Object>();
 	}
-
+	@Override
+	public String toString(){
+		return String.valueOf(score);
+	}
 	public String getId() {
 		return id;
 	}

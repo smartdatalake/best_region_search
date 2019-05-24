@@ -26,8 +26,12 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 	}
 
 	@Override
+	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k, ScoreFunction<POI> scoreFunction) {
+		return findBestCatchmentAreas(pois, eps, k, scoreFunction, new ArrayList<SpatialObject>());
+	}
+
 	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k,
-			ScoreFunction<POI> scoreFunction) {
+			ScoreFunction<POI> scoreFunction,List<SpatialObject> previous) {
 
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		long startTime, endTime;
@@ -61,7 +65,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 
 			// get the top block from the queue
 			block = queue.poll();
-			processBlock(block, eps, scoreFunction, queue, topk);
+			processBlock(block, eps, scoreFunction, queue, topk,previous);
 
 			// maxQueueSize = Math.max(maxQueueSize, queue.size());
 		}
@@ -112,7 +116,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 	}
 
 	private void processBlock(Block block, double eps, ScoreFunction<POI> scoreFunction, PriorityQueue<Block> queue,
-			List<SpatialObject> topk) {
+			List<SpatialObject> topk,List<SpatialObject> previous) {
 
 		// int pointsBefore = block.pois.size();
 
@@ -127,7 +131,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		// queue.add(block);
 		// } else {
 		if (block.type == Block.BLOCK_TYPE_REGION) {
-			inspectResult(block, eps, topk);
+			inspectResult(block, eps, topk,previous);
 		} else {
 			List<Block> newBlocks = block.sweep();
 			queue.addAll(newBlocks);
@@ -143,7 +147,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		// }
 	}
 
-	private void inspectResult(Block block, double eps, List<SpatialObject> topk) {
+	private void inspectResult(Block block, double eps, List<SpatialObject> topk,List<SpatialObject> previous) {
 		// generate candidate result
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
@@ -154,6 +158,12 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		boolean isDistinct = true;
 		if (distinctMode) {
 			for (SpatialObject so : topk) {
+				if (e.intersects(so.getGeometry().getEnvelopeInternal())) {
+					isDistinct = false;
+					break;
+				}
+			}
+			for (SpatialObject so : previous) {
 				if (e.intersects(so.getGeometry().getEnvelopeInternal())) {
 					isDistinct = false;
 					break;
