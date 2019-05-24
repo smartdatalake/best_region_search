@@ -1,49 +1,16 @@
 package matt.mains
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql._
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.{Encoder, Encoders}
 import org.apache.spark.sql.functions.{lower, max, min, when}
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.Row
-import java.io.FileInputStream
-import java.io.FileNotFoundException
-import java.io.IOException
-import java.text.ParseException
 
 import matt.definitions.GridIndexer
 import org.apache.spark.{SparkConf, SparkContext};
-//import java.util.List;
-import java.util.Properties;
-
-import scala.util.control.Breaks._
-import scala.collection.JavaConversions._
-import scala.collection.mutable.ListBuffer
-
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
-
-import matt.POI;
-import matt.SpatialObject;
-import matt.Grid;
-import matt.ca.BCAFinder;
-import matt.ca.BCAIndexProgressive;
-import matt.ca.BCAIndexProgressiveDiv;
-import matt.ca.BCAIndexProgressiveDivExhaustive;
-import matt.ca.UtilityScoreFunction;
-import matt.io.InputFileParser;
-import matt.io.ResultsWriter;
-import matt.score.ScoreFunction;
-import matt.score.ScoreFunctionCount;
-
 import matt.definitions.TableDefs
 import matt.definitions.Generic
 import org.apache.log4j.Logger
 import org.apache.log4j.Level
-import matt.distrib.NstepAlgo
 
 object Run {
   def main(args: Array[String]) {
