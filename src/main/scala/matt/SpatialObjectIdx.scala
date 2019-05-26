@@ -1,41 +1,13 @@
 package matt
 
-class SpatialObjectIdx {
+import scala.collection.mutable.ListBuffer
 
-  var pos: Integer = 0;
+class SpatialObjectIdx (spatialObject: SpatialObject){
 
-  var dependencies: List[Integer] = List[Integer]();
-
-  /**
-   *
-   * @param position
-   */
-  def this(position: Integer) = {
-    this();
-    this.pos = position;
-  }
-
-  /**
-   *
-   * @param newDep
-   */
-  def addDependency(newDep: Integer) = {
-    dependencies = dependencies :+ newDep;
-  }
-
-  /**
-   *
-   * @return
-   */
-  def getSpatialObjectPosition(): Integer = {
-    this.pos;
-  }
-
-  /**
-   *
-   * @return
-   */
-  def getDependencies(): List[Integer] = {
-    dependencies;
+  val leftUpperPOI:(Float,Float) = (spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat,spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
+  var region:SpatialObject=spatialObject
+  var dependenciesOverlapping: ListBuffer[SpatialObjectIdx] = ListBuffer[SpatialObjectIdx]();
+  def addDependencyOverlapping(spatialObjectIdx: SpatialObjectIdx)={
+    dependenciesOverlapping+=spatialObjectIdx
   }
 }

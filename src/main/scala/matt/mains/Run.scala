@@ -22,6 +22,10 @@ object Run {
       .builder
       .appName("Simple Application")
       .master("local[*]")
+      .config("spark.executor.memory", "70g")
+      .config("spark.driver.memory", "50g")
+      .config("spark.memory.offHeap.enabled",true)
+      .config("spark.memory.offHeap.size","16g")
       .getOrCreate()
 
     import spark.implicits;
@@ -38,8 +42,8 @@ object Run {
     //		val decayConstant = prop.getProperty("ca-decay-constant").toDouble;
     //		val printResults = true;
 
-    val poiInputFile2 = "/home/hamid/4.csv";
-    val poiInputFile = "/home/hamid/temp.csv";
+    val poiInputFile = "/home/hamid/4.csv";
+    val poiInputFile2 = "/home/hamid/temp.csv";
 
     val eps = 0.001
     // choose number of expected results
@@ -48,9 +52,9 @@ object Run {
 
     val inputData2 = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load(poiInputFile).drop();
     val inputData = inputData2.filter(x => (x.getAs[Float]("longtitude") != null && x.getAs[Float]("latitude") != null))
-    inputData.cache();
+    inputData;
     // set number of cores
-    val cores = 16
+    val cores = 1
     val width = scala.math.sqrt(cores).toInt;
 
     val minLong = inputData.select("longtitude").reduce((x, y) => if (x.getAs[Float]("longtitude") < y.getAs[Float]("longtitude")) x else y).getAs[Float](0)
@@ -59,9 +63,8 @@ object Run {
     val minLat = inputData.select("latitude").reduce((x, y) => if (x.getAs[Float]("latitude") < y.getAs[Float]("latitude")) x else y).getAs[Float](0)
     val maxLat = inputData.select("latitude").reduce((x, y) => if (x.getAs[Float]("latitude") > y.getAs[Float]("latitude")) x else y).getAs[Float](0)
     // choose width of grid (the number of cores required is N squared)
-    val minmaxLongArra = inputData.agg(min("longtitude"), max("longtitude")).rdd.map(r => r(0)).collect()
-    val minmaxLatArra = inputData.agg(min("latitude"), max("latitude")).rdd.map(r => r(0)).collect()
-    println(2)
+   // val minmaxLongArra = inputData.agg(min("longtitude"), max("longtitude")).rdd.map(r => r(0)).collect()
+   // val minmaxLatArra = inputData.agg(min("latitude"), max("latitude")).rdd.map(r => r(0)).collect()
 
     val minmaxLong =  (minLong-0.00001.asInstanceOf[Float], maxLong+0.0001.asInstanceOf[Float]);
     println("\n\nminmaxLONG: " + minmaxLong + "\n\n");
@@ -71,19 +74,19 @@ object Run {
     // find to which node does each point belongs to : (NodeNo,Row)
     val geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, width, minmaxLong, minmaxLat,eps.asInstanceOf[Float], geometryFactory,gridIndexer));
-    nodeToPoint.groupByKey().foreach(x=> println(x._2.size))
+
     val Nstep = true;
     val OneStep = false;
 
     if (Nstep) {
-       matt.distrib.NstepAlgo.Run(nodeToPoint, eps, decayConstant, topk);
+       matt.distrib.NstepAlgo.Run(nodeToPoint, eps, topk);
     }
 
     if (OneStep) {
-      matt.distrib.OnestepAlgo.Run(nodeToPoint, eps, decayConstant, topk);
+      matt.distrib.OnestepAlgo.Run(nodeToPoint, eps, decayConstant, topk,gridIndexer);
     }
 
     spark.stop()
-  }
+  };
 
 }

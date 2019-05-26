@@ -33,6 +33,9 @@ object Generic {
     val lat = row.getAs[Float]("latitude")
     //val newNode = extractNode(x.get(0), x.get(1), width, minmaxLong, minmaxLat);
     val result = ListBuffer[(Int, POI)]()
+   // result.add((1,new POI(row.getAs[String]("id"), row.getAs[String]("name")
+   //   , row.getAs[Float]("longtitude"), row.getAs[Float]("latitude"), keywords, 0, geometryFactory)))
+   // return result
     return gridIndexer.getNodeIndex(row.getAs[Float]("longtitude"), row.getAs[Float]("latitude"))
       .map(x => (x._2 * width + x._1 + 1, new POI(row.getAs[String]("id"), row.getAs[String]("name")
         , row.getAs[Float]("longtitude"), row.getAs[Float]("latitude"), keywords, 0, geometryFactory)))
