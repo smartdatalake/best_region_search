@@ -2,19 +2,19 @@ package matt.definitions
 
 import scala.collection.mutable.ListBuffer
 
-class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Float,Float),val minmaxLat:(Float,Float)) extends Serializable {
+class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val minmaxLat:(Double,Double)) extends Serializable {
   val dataSize = math.max((minmaxLat._2 - minmaxLat._1), (minmaxLong._2 - minmaxLong._1))
   val gridSize = dataSize / width
   val cellSize = gridSize * eps.asInstanceOf[Double]
 
-  def getCellIndex(long: Float, lat: Float): (Int, Int) = {
+  def getCellIndex(long: Double, lat: Double): (Int, Int) = {
     val nodeIndex = getNodeIndex(long, lat).head
-    val cellI = ((long - nodeIndex._1 * gridSize) / cellSize).toInt
+    val cellI = ((long - (minmaxLong._1+nodeIndex._1 * gridSize)) / cellSize).toInt
     val cellJ = ((minmaxLat._2 - nodeIndex._2 * gridSize - lat) / cellSize).toInt
     return (cellI, cellJ)
   }
 
-  def getNodeIndex(long: Float, lat: Float): Seq[(Int, Int)] = {
+  def getNodeIndex(long: Double, lat: Double): Seq[(Int, Int)] = {
     val result = ListBuffer[(Int, Int)]()
     val nodeI = ((long - minmaxLong._1) / gridSize).toInt
     val nodeJ = ((minmaxLat._2 - lat) / gridSize).toInt
@@ -31,7 +31,7 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Float,Float),val mi
     result
   }
 
-  def getNodeNumber(long: Float, lat: Float): Int = {
+  def getNodeNumber(long: Double, lat: Double): Int = {
     val (nodeI, nodeJ) = getNodeIndex(long, lat).head
     return nodeJ * width + nodeI + 1
   }

@@ -27,12 +27,6 @@ object OnestepAlgo {
       dependencyGraph.add(bcaFinder.findBestCatchmentAreas(pois, eps, topk, scoreFunction).toList);
 
     }
-
-    val bca = bcaFinder.findBestCatchmentAreas(pois, eps, topk, scoreFunction).toList;
-
-    // build index
-    val index = buildIndex(bca)
-
     dependencyGraph
   }
 

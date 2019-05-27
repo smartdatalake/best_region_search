@@ -20,8 +20,8 @@ object TableDefs {
   val customSchema2 = StructType(Array(
     StructField("id", StringType, true),
     StructField("name", StringType, true),
-    StructField("longtitude", FloatType, true),
-    StructField("latitude", FloatType, true),
+    StructField("longtitude", DoubleType, true),
+    StructField("latitude", DoubleType, true),
     StructField("keywords", StringType, true)))
 }
 
