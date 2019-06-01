@@ -1,14 +1,16 @@
 package matt.mains
 
+import java.net.URI
+
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{lower, max, min, when}
-
 import matt.definitions.GridIndexer
-import org.apache.spark.{SparkConf, SparkContext};
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.PrecisionModel;
+import org.apache.spark.{SparkConf, SparkContext}
+import org.locationtech.jts.geom.{GeometryFactory, PrecisionModel}
 import matt.definitions.TableDefs
 import matt.definitions.Generic
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.log4j.Logger
 import org.apache.log4j.Level
 
@@ -16,17 +18,20 @@ object Run {
   def main(args: Array[String]) {
     Logger.getLogger("org").setLevel(Level.OFF)
     Logger.getLogger("akka").setLevel(Level.OFF)
-    val con = new SparkConf().setAppName("simple App").setMaster("local[2]")
-    val sc = new SparkContext(con)
     val spark = SparkSession
       .builder
+  //      .master("local[*]")
       .appName("Simple Application")
-      .config("spark.executor.memory", "70g")
-      .config("spark.driver.memory", "50g")
+      .config("spark.executor.memory", "7g")
+      .config("spark.driver.memory", "7g")
       .config("spark.memory.offHeap.enabled",true)
-      .config("spark.memory.offHeap.size","16g")
+      .config("spark.memory.offHeap.size","7g")
       .getOrCreate()
+   val hadoopConfig: Configuration = spark.sparkContext.hadoopConfiguration
 
+   hadoopConfig.set("fs.hdfs.impl", classOf[org.apache.hadoop.hdfs.DistributedFileSystem].getName)
+
+   hadoopConfig.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
     import spark.implicits;
 
     //		/* load configuration file */
@@ -41,20 +46,20 @@ object Run {
     //		val decayConstant = prop.getProperty("ca-decay-constant").toDouble;
     //		val printResults = true;
 
-    val poiInputFile3 = "/home/hamid/4.csv";
+    val poiInputFile = "/home/hamid/5.csv";
     val poiInputFile2 = "/home/hamid/temp.csv";
-    val poiInputFile = "/input.csv";
+    val poiInputFile3 = "/home/hamid/input.csv";
 
     val eps = 0.001
     // choose number of expected results
-    val topk = 10
+    val topk = 7
     val decayConstant = 0.5
 
-    val inputData2 = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load(poiInputFile).drop();
+    val inputData2 = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load("hdfs:///input.csv").drop();
+  //  val inputData2 = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load(poiInputFile).drop();
     val inputData = inputData2.filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null))
-    inputData;
     // set number of cores
-    val cores = 16
+    val cores = 16*16
     val width = scala.math.sqrt(cores).toInt;
 
     val minLong = inputData.select("longtitude").reduce((x, y) => if (x.getAs[Double]("longtitude") < y.getAs[Double]("longtitude")) x else y).getAs[Double](0)
@@ -73,8 +78,8 @@ object Run {
     val gridIndexer= new GridIndexer(width,eps,minmaxLong,minmaxLat)
     // find to which node does each point belongs to : (NodeNo,Row)
     val geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
-    val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, width, minmaxLong, minmaxLat,eps.asInstanceOf[Double], geometryFactory,gridIndexer));
-    //nodeToPoint.collect().foreach(x=>println(x._1))
+    val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, width, minmaxLong, minmaxLat,eps.asInstanceOf[Double], geometryFactory,gridIndexer)).cache();
+  //  nodeToPoint.collect().foreach(x=>println(x._1))
     val Nstep = true;
     val OneStep = false;
 

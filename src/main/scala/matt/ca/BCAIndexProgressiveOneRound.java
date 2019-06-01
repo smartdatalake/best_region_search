@@ -1,39 +1,35 @@
 package matt.ca;
+import scala.collection.JavaConversions;
 
+import matt.DependencyGraph;
+import matt.Grid;
+import matt.POI;
+import matt.SpatialObject;
+import matt.definitions.GridIndexer;
+import matt.score.ScoreFunction;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.PriorityQueue;
-
-import matt.definitions.GridIndexer;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.PrecisionModel;
-
-import matt.Grid;
-import matt.POI;
-import matt.SpatialObject;
-import matt.score.ScoreFunction;
-
-public class BCAIndexProgressive extends BCAFinder<POI> {
+import scala.collection.JavaConverters;
+public class BCAIndexProgressiveOneRound  {
 
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
 	private long overallStartTime, resultEndTime;
-
-	public BCAIndexProgressive(boolean distinctMode) {
+	private GridIndexer gridIndexer;
+	public BCAIndexProgressiveOneRound(boolean distinctMode,GridIndexer gridIndexer) {
 		super();
 		this.distinctMode = distinctMode;
+		this.gridIndexer=gridIndexer;
 	}
 
 
-	@Override
-	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k, ScoreFunction<POI> scoreFunction) {
-		return findBestCatchmentAreas(pois, eps, k, scoreFunction, new ArrayList<SpatialObject>());
-	}
-
-	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k,
-			ScoreFunction<POI> scoreFunction,List<SpatialObject> previous) {
+	public Object findBestCatchmentAreas(List<POI> pois, double eps, int k,
+			ScoreFunction<POI> scoreFunction) {
 
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		long startTime, endTime;
@@ -45,41 +41,43 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 
 		/* Assign points to grid cells. */
 	//	System.out.println("Creating the grid...");
-	//	startTime = System.nanoTime();
+		startTime = System.nanoTime();
 		Grid grid = new Grid(pois, eps);
-	//	endTime = (System.nanoTime() - startTime) / 1000000;
+		endTime = (System.nanoTime() - startTime) / 1000000;
 	//	System.out.println(" DONE [" + endTime + " msec]");
 
 		/* Insert grid cells in a priority queue. */
 	//	System.out.println("Initializing the queue...");
-	//	startTime = System.nanoTime();
+		startTime = System.nanoTime();
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
-	//	endTime = (System.nanoTime() - startTime) / 1000000;
+		endTime = (System.nanoTime() - startTime) / 1000000;
 	//	System.out.println(" DONE [" + endTime + " msec]");
 		// int maxQueueSize = queue.size();
 
 		/* Process the queue. */
 		Block block;
-	//	System.out.println("Processing the queue...");
-//		startTime = System.nanoTime();
+		//System.out.println("Processing the queue...");
+		startTime = System.nanoTime();
 
-		while (topk.size() < k && !queue.isEmpty()) {
+		DependencyGraph dependencyGraph=new DependencyGraph(gridIndexer);
+		while (dependencyGraph.safeRegionCnt() < k && !queue.isEmpty()) {
 
 			// get the top block from the queue
 			block = queue.poll();
-			processBlock(block, eps, scoreFunction, queue, topk,previous);
+			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 
 			// maxQueueSize = Math.max(maxQueueSize, queue.size());
 		}
 
-//		endTime = (System.nanoTime() - startTime) / 1000000;
-//		System.out.println(" DONE [" + endTime + " msec]");
+		endTime = (System.nanoTime() - startTime) / 1000000;
+	//	System.out.println(" DONE [" + endTime + " msec]");
 		// System.out.println("Max queue size: " + maxQueueSize);
+		System.out.println("**************************************************** "+dependencyGraph.toString());
 
-		return topk;
+		return dependencyGraph.getFinalResult().toList();
 	}
 
-	public PriorityQueue<Block> initQueue(Grid grid, ScoreFunction<POI> scoreFunction, double eps) {
+	private PriorityQueue<Block> initQueue(Grid grid, ScoreFunction<POI> scoreFunction, double eps) {
 
 		PriorityQueue<Block> queue = new PriorityQueue<Block>();
 
@@ -118,7 +116,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 	}
 
 	private void processBlock(Block block, double eps, ScoreFunction<POI> scoreFunction, PriorityQueue<Block> queue,
-			List<SpatialObject> topk,List<SpatialObject> previous) {
+			DependencyGraph dependencyGraph) {
 
 		// int pointsBefore = block.pois.size();
 
@@ -133,7 +131,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		// queue.add(block);
 		// } else {
 		if (block.type == Block.BLOCK_TYPE_REGION) {
-			inspectResult(block, eps, topk,previous);
+			inspectResult(block, eps, dependencyGraph);
 		} else {
 			List<Block> newBlocks = block.sweep();
 			queue.addAll(newBlocks);
@@ -149,41 +147,50 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		// }
 	}
 
-	private void inspectResult(Block block, double eps, List<SpatialObject> topk,List<SpatialObject> previous) {
+	private void inspectResult(Block block, double eps,DependencyGraph dependencyGraph) {
 		// generate candidate result
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
+		SpatialObject candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
+				null, block.utilityScore, geometryFactory.toGeometry(e));
 
 		// Envelope e = block.envelope; // with tight mbr
 
 		// if this result is valid, add it to top-k
 		boolean isDistinct = true;
-		if (distinctMode) {
-			for (SpatialObject so : topk) {
-				if (e.intersects(so.getGeometry().getEnvelopeInternal())) {
-					isDistinct = false;
-					break;
-				}
+
+		//1st Condition
+		if (!dependencyGraph.IsOverlapAnyRegion(candidate) && !dependencyGraph.IsBorderRegion(candidate))
+			dependencyGraph.addSafeRegion(candidate);
+		//2nd Condition
+		else if (dependencyGraph.IsOverlapSafeRegion(candidate))
+			// It is not added to dependency graph
+			return;
+		//3rd Condition
+		else if (dependencyGraph.IsOverlapUnsafeRegion(candidate) || dependencyGraph.IsBorderRegion(candidate)) {
+			dependencyGraph.addUnsafeRegion(candidate);
+			if(dependencyGraph.IsDependencyIncluded(candidate)){
+				// Do not add Safe
+				// Do not add M
+				return;
 			}
-			for (SpatialObject so : previous) {
-				if (e.intersects(so.getGeometry().getEnvelopeInternal())) {
-					isDistinct = false;
-					break;
-				}
+			else{
+				dependencyGraph.increaseSafeCNT();
+				dependencyGraph.addM(candidate);
 			}
+
 		}
-		if (isDistinct) {
-			SpatialObject result = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
-					null, block.utilityScore, geometryFactory.toGeometry(e));
+
+/*		if (isDistinct) {
+
 			result.setAttributes(new HashMap<Object, Object>());
 			result.getAttributes().put("coveredPoints", block.pois);
 
 			resultEndTime = (System.nanoTime() - overallStartTime) / 1000000;
 			result.getAttributes().put("executionTime", resultEndTime);
-			topk.add(result);
 
 			System.out.println("Results so far: " + topk.size());
-		}
+		}*/
 	}
 
 	@SuppressWarnings("unused")

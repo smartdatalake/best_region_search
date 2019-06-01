@@ -1,80 +1,59 @@
 package matt.ca;
 
+import matt.Grid;
+import matt.POI;
+import matt.SpatialObject;
+import matt.score.ScoreFunction;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.PrecisionModel;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import matt.definitions.GridIndexer;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.PrecisionModel;
-
-import matt.Grid;
-import matt.POI;
-import matt.SpatialObject;
-import matt.score.ScoreFunction;
-
-public class BCAIndexProgressive extends BCAFinder<POI> {
+public class BCAIndexProgressive2 extends BCAFinder<POI> {
 
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
 	private long overallStartTime, resultEndTime;
-
-	public BCAIndexProgressive(boolean distinctMode) {
+	private Grid grid;
+	private PriorityQueue<Block> queue;
+	ScoreFunction<POI> scoreFunction;
+	public BCAIndexProgressive2(List<POI> pois,double eps,ScoreFunction<POI> scoreFunction) {
 		super();
-		this.distinctMode = distinctMode;
+		this.distinctMode = true;
+		this.scoreFunction=scoreFunction;
+		grid = new Grid(pois, eps);
+		queue = initQueue(grid, scoreFunction, eps);
+		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
+
 	}
 
 
 	@Override
 	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k, ScoreFunction<POI> scoreFunction) {
-		return findBestCatchmentAreas(pois, eps, k, scoreFunction, new ArrayList<SpatialObject>());
+		return findBestCatchmentAreas( eps, k, null);
 	}
 
-	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k,
-			ScoreFunction<POI> scoreFunction,List<SpatialObject> previous) {
+	public List<SpatialObject> findBestCatchmentAreas(double eps,int k, List<SpatialObject> previous) {
 
-		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
-		long startTime, endTime;
 
 		overallStartTime = System.nanoTime();
 
-		// list to hold the top-k results
 		List<SpatialObject> topk = new ArrayList<SpatialObject>();
 
-		/* Assign points to grid cells. */
-	//	System.out.println("Creating the grid...");
-	//	startTime = System.nanoTime();
-		Grid grid = new Grid(pois, eps);
-	//	endTime = (System.nanoTime() - startTime) / 1000000;
-	//	System.out.println(" DONE [" + endTime + " msec]");
 
-		/* Insert grid cells in a priority queue. */
-	//	System.out.println("Initializing the queue...");
-	//	startTime = System.nanoTime();
-		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
-	//	endTime = (System.nanoTime() - startTime) / 1000000;
-	//	System.out.println(" DONE [" + endTime + " msec]");
-		// int maxQueueSize = queue.size();
-
-		/* Process the queue. */
 		Block block;
-	//	System.out.println("Processing the queue...");
-//		startTime = System.nanoTime();
 
 		while (topk.size() < k && !queue.isEmpty()) {
 
-			// get the top block from the queue
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, topk,previous);
 
-			// maxQueueSize = Math.max(maxQueueSize, queue.size());
 		}
 
-//		endTime = (System.nanoTime() - startTime) / 1000000;
-//		System.out.println(" DONE [" + endTime + " msec]");
-		// System.out.println("Max queue size: " + maxQueueSize);
 
 		return topk;
 	}

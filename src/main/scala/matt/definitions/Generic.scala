@@ -48,10 +48,10 @@ object Generic {
   def intersectsList(point: SpatialObject, list: ListBuffer[SpatialObject]): Boolean = {
     for (point2 <- list) {
       if (intersects(point, point2)) {
-        true
+       return true
       }
     }
-    false
+    return false
   }
 }
 /*    for(node <-1 until (width*width)+1 ){
