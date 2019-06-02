@@ -8,12 +8,13 @@ import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.PriorityQueue;
 
-public class BCAIndexProgressive2 extends BCAFinder<POI> {
+public class BCAIndexProgressive2 extends BCAFinder<POI> implements Serializable {
 
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
@@ -23,11 +24,12 @@ public class BCAIndexProgressive2 extends BCAFinder<POI> {
 	ScoreFunction<POI> scoreFunction;
 	public BCAIndexProgressive2(List<POI> pois,double eps,ScoreFunction<POI> scoreFunction) {
 		super();
+		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		this.distinctMode = true;
 		this.scoreFunction=scoreFunction;
 		grid = new Grid(pois, eps);
 		queue = initQueue(grid, scoreFunction, eps);
-		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
+
 
 	}
 

@@ -34,7 +34,7 @@ object NstepAlgo {
 
     // this has to be iterated (each node has to calculate the best subset)
     var iteration = 0;
-    val Kprime =5;
+    val Kprime =1;
     while (Ans.length < K) {
 
       println("Current Iteration: " + iteration);
@@ -69,7 +69,7 @@ object NstepAlgo {
     }
 
     println("\n\n\n");
-    println("Final Result");
+    println("Final Result in "+iteration+" iteration");
     println("\n\n\n");
 
     for (x <- Ans) {

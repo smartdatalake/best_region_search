@@ -1,12 +1,13 @@
 package matt.ca;
 
+import java.io.Serializable;
 import java.util.List;
 
 import org.locationtech.jts.geom.Envelope;
 
 import matt.SpatialObject;
 
-public class UtilityScoreFunction {
+public class UtilityScoreFunction implements Serializable {
 
 	// public double[] computeScore(List<SpatialObject> spatialObjects, double
 	// objectiveScoreWeight,

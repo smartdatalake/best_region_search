@@ -2,7 +2,9 @@ package matt.ca;
 
 import matt.POI;
 
-public class Rectangle implements Comparable<Rectangle> {
+import java.io.Serializable;
+
+public class Rectangle implements Comparable<Rectangle>, Serializable {
 	public double idx;
 	public boolean isMin;
 	public POI p;

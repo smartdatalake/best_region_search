@@ -1,5 +1,6 @@
 package matt;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,7 +10,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
 
-public class Grid {
+public class Grid implements Serializable {
 
 	private Map<Integer, Map<Integer, List<POI>>> cells;
 	private double offsetX, offsetY, eps, minX = Double.POSITIVE_INFINITY, minY = Double.POSITIVE_INFINITY,

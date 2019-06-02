@@ -1,5 +1,6 @@
 package matt.ca;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,7 +12,7 @@ import org.locationtech.jts.geom.Point;
 import matt.POI;
 import matt.score.ScoreFunction;
 
-public class Block implements Comparable<Block> {
+public class Block implements Comparable<Block>, Serializable {
 
 	public static final int BLOCK_ORIENTATION_HORIZONTAL = 0;
 	public static final int BLOCK_ORIENTATION_VERTICAL = 1;
