@@ -1,32 +1,26 @@
 /* SimpleApp.scala */
 package matt.distrib
 
-import java.util.PriorityQueue
-
-import collection.mutable.{HashMap, MultiMap, Set}
-import matt.{Grid, POI, SpatialObject}
-import matt.ca.{BCAIndexProgressive, BCAIndexProgressive2, BCAIndexProgressiveRDD, Block}
+import matt.{POI, SpatialObject}
+import matt.ca.BCAIndexProgressive2
 import matt.definitions.Generic
 import matt.score.ScoreFunctionCount
 import org.apache.spark.rdd.RDD
-
 import scala.collection.JavaConversions._
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks._
 
 object NstepAlgo2 {
-
-  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double,  K: Int,width:Int) {
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int, width: Int) {
     var Ans = List[SpatialObject]();
-    val listOfBCAFinder = nodeToPoint.groupByKey().map(x=>(x._1,new BCAIndexProgressive2(ListBuffer(x._2.toList: _*), eps, new ScoreFunctionCount[POI]()))).cache().collect().toList
+    val listOfBCAFinder = nodeToPoint.groupByKey().map(x => (x._1, new BCAIndexProgressive2(ListBuffer(x._2.toList: _*), eps, new ScoreFunctionCount[POI]()))).cache().collect().toList
     var iteration = 0;
-    val Kprime =1;
+    val Kprime = 1;
     while (Ans.length < K) {
       println("Current Iteration: " + iteration);
       var localAnswers = ListBuffer[SpatialObject]();
-      for(y<-listOfBCAFinder){
-        localAnswers.addAll(y._2.findBestCatchmentAreas(eps,Kprime,Ans))
+      for (y <- listOfBCAFinder) {
+        localAnswers.addAll(y._2.findBestCatchmentAreas(eps, Kprime, Ans))
       }
       var roundAnswers = ListBuffer[SpatialObject]()
       localAnswers = localAnswers.sortBy(_.getScore).reverse
@@ -51,7 +45,5 @@ object NstepAlgo2 {
     for (x <- Ans) {
       println(x.getId);
     }
-
   }
-
 }
