@@ -182,7 +182,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			result.getAttributes().put("executionTime", resultEndTime);
 			topk.add(result);
 
-			System.out.println("Results so far: " + topk.size());
+		//	System.out.println("Results so far: " + topk.size());
 		}
 	}
 

@@ -29,10 +29,7 @@ public class BCAIndexProgressive2 extends BCAFinder<POI> implements Serializable
 		this.scoreFunction=scoreFunction;
 		grid = new Grid(pois, eps);
 		queue = initQueue(grid, scoreFunction, eps);
-
-
 	}
-
 
 	@Override
 	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k, ScoreFunction<POI> scoreFunction) {
@@ -40,41 +37,25 @@ public class BCAIndexProgressive2 extends BCAFinder<POI> implements Serializable
 	}
 
 	public List<SpatialObject> findBestCatchmentAreas(double eps,int k, List<SpatialObject> previous) {
-
-
-		overallStartTime = System.nanoTime();
-
 		List<SpatialObject> topk = new ArrayList<SpatialObject>();
-
-
 		Block block;
-
 		while (topk.size() < k && !queue.isEmpty()) {
-
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, topk,previous);
-
 		}
-
-
 		return topk;
 	}
 
 	public PriorityQueue<Block> initQueue(Grid grid, ScoreFunction<POI> scoreFunction, double eps) {
-
 		PriorityQueue<Block> queue = new PriorityQueue<Block>();
-
 		List<POI> cellPois;
 		Block block;
 		Envelope cellBoundary;
-
 		/* Iterate over the cells and compute an upper bound for each cell. */
 		for (Integer row : grid.getCells().keySet()) {
 			for (Integer column : grid.getCells().get(row).keySet()) {
-
 				cellBoundary = grid.cellIndexToGeometry(row, column, geometryFactory).getEnvelopeInternal();
 				cellBoundary.expandBy(0.5 * eps);
-
 				cellPois = new ArrayList<POI>();
 				for (int i = row - 1; i <= row + 1; i++) {
 					for (int j = column - 1; j <= column + 1; j++) {
@@ -87,20 +68,16 @@ public class BCAIndexProgressive2 extends BCAFinder<POI> implements Serializable
 						}
 					}
 				}
-
 				block = new Block(cellPois, scoreFunction, Block.BLOCK_TYPE_CELL, Block.BLOCK_ORIENTATION_VERTICAL,
 						Block.EXPAND_NONE, eps, geometryFactory);
-
 				queue.add(block);
 			}
 		}
-
 		return queue;
 	}
 
 	private void processBlock(Block block, double eps, ScoreFunction<POI> scoreFunction, PriorityQueue<Block> queue,
 			List<SpatialObject> topk,List<SpatialObject> previous) {
-
 		// int pointsBefore = block.pois.size();
 
 		// if (distinctMode) {
@@ -119,7 +96,6 @@ public class BCAIndexProgressive2 extends BCAFinder<POI> implements Serializable
 			List<Block> newBlocks = block.sweep();
 			queue.addAll(newBlocks);
 		}
-
 		// insert the two derived sub-blocks in the queue
 		if ((block.type == Block.BLOCK_TYPE_SLAB || block.type == Block.BLOCK_TYPE_REGION) && block.pois.size() > 1) {
 			Block[] derivedBlocks = block.getSubBlocks();
@@ -134,9 +110,6 @@ public class BCAIndexProgressive2 extends BCAFinder<POI> implements Serializable
 		// generate candidate result
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
-
-		// Envelope e = block.envelope; // with tight mbr
-
 		// if this result is valid, add it to top-k
 		boolean isDistinct = true;
 		if (distinctMode) {
