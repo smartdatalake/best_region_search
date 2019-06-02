@@ -49,9 +49,10 @@ object Run {
 
     //////Read and split CSV coordination to (nodeNumber, POI) (assign poi to each worker)
     ///////////////////////////////////////////////////////////////
-    val inputData2 = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load("hdfs:///input.csv").drop();
-    //val inputData2 = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load(poiInputFile).drop();
-    val inputData = inputData2.filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null))
+
+    //val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load("hdfs:///input.csv").drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null));;
+    val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load(poiInputFile).drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null));
+
 
 
     val minLong = inputData.select("longtitude").reduce((x, y) => if (x.getAs[Double]("longtitude") < y.getAs[Double]("longtitude")) x else y).getAs[Double](0)
@@ -65,6 +66,8 @@ object Run {
     println("\n\nminmaxLONG: " + minmaxLong + "\n\n");
     val minmaxLat = (minLat-0.00001, maxLat+0.00001);
     println("\n\nminmaxLat: " + minmaxLat + "\n\n");
+
+
     val gridIndexer= new GridIndexer(width,eps,minmaxLong,minmaxLat)
     // find to which node does each point belongs to : (NodeNo,Row)
     val geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
