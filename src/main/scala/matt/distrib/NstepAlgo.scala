@@ -24,7 +24,7 @@ object NstepAlgo {
   def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int) {
     var Ans = List[SpatialObject]();
     var iteration = 0;
-    val Kprime = 1;
+    val Kprime = 150;
 
     while (Ans.length < K) {
       println("Current Iteration: " + iteration);
@@ -35,14 +35,16 @@ object NstepAlgo {
       /////take Kprime acceptable regions from current round answers as "roundAnswers"
       ////////////////////////////////
       var pos = 0
-      while (pos < Math.min(Kprime, K - Ans.size)) {
-        if (Generic.intersectsList(localAnswers.get(pos), roundAnswers)) {
-          break;
-        } else {
-          val temp = localAnswers.get(pos);
-          roundAnswers += temp;
+      breakable {
+        while (pos < Math.min(Kprime, K - Ans.size)) {
+          if (Generic.intersectsList(localAnswers.get(pos), roundAnswers)) {
+            break;
+          } else {
+            val temp = localAnswers.get(pos);
+            roundAnswers += temp;
+          }
+          pos += 1
         }
-        pos += 1
       }
       ///////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////

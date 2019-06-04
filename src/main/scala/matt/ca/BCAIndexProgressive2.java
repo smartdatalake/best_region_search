@@ -29,6 +29,7 @@ public class BCAIndexProgressive2 extends BCAFinder<POI> implements Serializable
 		this.scoreFunction=scoreFunction;
 		grid = new Grid(pois, eps);
 		queue = initQueue(grid, scoreFunction, eps);
+		System.out.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++"+System.nanoTime()+pois.get(0).toString());
 	}
 
 	@Override

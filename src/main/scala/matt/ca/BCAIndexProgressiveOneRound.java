@@ -30,50 +30,15 @@ public class BCAIndexProgressiveOneRound  {
 
 	public Object findBestCatchmentAreas(List<POI> pois, double eps, int k,
 			ScoreFunction<POI> scoreFunction) {
-
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
-		long startTime, endTime;
-
-		overallStartTime = System.nanoTime();
-
-		// list to hold the top-k results
-		List<SpatialObject> topk = new ArrayList<SpatialObject>();
-
-		/* Assign points to grid cells. */
-	//	System.out.println("Creating the grid...");
-		startTime = System.nanoTime();
 		Grid grid = new Grid(pois, eps);
-		endTime = (System.nanoTime() - startTime) / 1000000;
-	//	System.out.println(" DONE [" + endTime + " msec]");
-
-		/* Insert grid cells in a priority queue. */
-	//	System.out.println("Initializing the queue...");
-		startTime = System.nanoTime();
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
-		endTime = (System.nanoTime() - startTime) / 1000000;
-	//	System.out.println(" DONE [" + endTime + " msec]");
-		// int maxQueueSize = queue.size();
-
-		/* Process the queue. */
 		Block block;
-		//System.out.println("Processing the queue...");
-		startTime = System.nanoTime();
-
 		DependencyGraph dependencyGraph=new DependencyGraph(gridIndexer);
 		while (dependencyGraph.safeRegionCnt() < k && !queue.isEmpty()) {
-
-			// get the top block from the queue
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
-
-			// maxQueueSize = Math.max(maxQueueSize, queue.size());
 		}
-
-		endTime = (System.nanoTime() - startTime) / 1000000;
-	//	System.out.println(" DONE [" + endTime + " msec]");
-		// System.out.println("Max queue size: " + maxQueueSize);
-		System.out.println("**************************************************** "+dependencyGraph.toString());
-
 		return dependencyGraph.getFinalResult().toList();
 	}
 
@@ -153,11 +118,6 @@ public class BCAIndexProgressiveOneRound  {
 		e.expandBy(eps / 2); // with fixed size eps
 		SpatialObject candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
 				null, block.utilityScore, geometryFactory.toGeometry(e));
-
-		// Envelope e = block.envelope; // with tight mbr
-
-		// if this result is valid, add it to top-k
-		boolean isDistinct = true;
 
 		//1st Condition
 		if (!dependencyGraph.IsOverlapAnyRegion(candidate) && !dependencyGraph.IsBorderRegion(candidate))

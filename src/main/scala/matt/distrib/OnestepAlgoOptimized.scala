@@ -1,15 +1,16 @@
 /* SimpleApp.scala */
 package matt.distrib
 
+import matt.ca.BCAIndexProgressiveOneRound
+import matt.definitions.{Generic, GridIndexer}
+import matt.score.ScoreFunctionCount
+import matt.{POI, SpatialObject}
 import org.apache.spark.rdd.RDD
+
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
-import matt.{ POI, SpatialObject}
-import matt.ca.BCAIndexProgressiveOneRound
-import matt.score.ScoreFunctionCount
-import matt.definitions.{Generic, GridIndexer}
 
-object OnestepAlgo {
+object OnestepAlgoOptimized {
 
   def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, decayConstant: Double, topk: Int, gridIndexer: GridIndexer): List[SpatialObject] = {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
@@ -18,7 +19,7 @@ object OnestepAlgo {
     bcaFinder.findBestCatchmentAreas(pois, eps, topk, scoreFunction).asInstanceOf[List[SpatialObject]]
   }
 
-  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, decayConstant: Double, topk: Int, gridIndexer: GridIndexer) {
+  def Run(nodeToPoint: RDD[(Int, POI)],BorderPoint: RDD[(Int, POI)], eps: Double, decayConstant: Double, topk: Int, gridIndexer: GridIndexer) {
     val Ans = ListBuffer[SpatialObject]()
     val localAnswers = nodeToPoint.groupByKey().flatMap(x => oneStepAlgo(x, eps, decayConstant, topk, gridIndexer))
       .collect().toList.sortBy(_.getScore).reverse

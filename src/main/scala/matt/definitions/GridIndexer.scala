@@ -82,4 +82,17 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
       result.remove(5)
     result
   }
+
+  def getNodeNumber_Border(long: Double, lat: Double): Int = {
+    val ((cellI, cellJ), (nodeI, nodeJ)) = getPointIndex(long, lat)
+    if (nodeI != 0 && (cellI % gridSizePerCell) == 0)
+      return nodeJ * width + nodeI
+    if (nodeJ != 0 && cellJ % gridSizePerCell == 0)
+      return (nodeJ - 1) * width + nodeI + 1
+    if (nodeJ != width - 1 && cellJ % gridSizePerCell == gridSizePerCell - 1)
+      return nodeJ * width + nodeI + 1
+    if (nodeI != width - 1 && (cellI % gridSizePerCell) == gridSizePerCell - 1)
+      return nodeJ * width + nodeI + 1
+    return -1
+  }
 }
