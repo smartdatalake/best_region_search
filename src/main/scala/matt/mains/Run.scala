@@ -1,7 +1,9 @@
 package matt.mains
 
 import java.net.URI
+import java.util
 
+import matt.POI
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{lower, max, min, when}
 import matt.definitions.GridIndexer
@@ -67,8 +69,7 @@ object Run {
   println(gridIndexer.gridSizePerCell)
   // find to which node does each point belongs to : (NodeNo,Row)
   val geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
-  val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, width, minmaxLong, minmaxLat
-   , eps.asInstanceOf[Double], geometryFactory, gridIndexer)).cache();
+  val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer)).cache();
   val borderPOI = inputData.rdd.map(x => {
    (gridIndexer.getNodeNumber_Border(x.getAs[Double]("longtitude")
     , x.getAs[Double]("latitude")), x)
@@ -98,7 +99,7 @@ object Run {
   }
 
   if (OneStepOptimized) {
-   matt.distrib.OnestepAlgoOptimized(nodeToPoint, borderPOI, eps, decayConstant, topk, gridIndexer)
+   matt.distrib.OnestepAlgoOptimized.Run(nodeToPoint, borderPOI, eps, decayConstant, topk, gridIndexer)
   }
 
   spark.stop()

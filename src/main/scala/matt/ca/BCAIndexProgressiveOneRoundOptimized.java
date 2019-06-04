@@ -1,27 +1,26 @@
 package matt.ca;
-import matt.*;
-import scala.Int;
-import scala.collection.JavaConversions;
 
+import matt.DependencyGraph;
+import matt.Grid;
+import matt.POI;
+import matt.SpatialObject;
 import matt.definitions.GridIndexer;
 import matt.score.ScoreFunction;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
+
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.PriorityQueue;
-import scala.collection.JavaConverters;
-public class BCAIndexProgressiveOneRound  {
-	private boolean IsOptimized;
+
+public class BCAIndexProgressiveOneRoundOptimized {
+
 	private boolean distinctMode;
-	private int nodeNumber;
 	private GeometryFactory geometryFactory;
 	private long overallStartTime, resultEndTime;
 	private GridIndexer gridIndexer;
-	private HashMap<Integer,BorderResult> borderInfo;
-	public BCAIndexProgressiveOneRound(boolean distinctMode,GridIndexer gridIndexer) {
+	public BCAIndexProgressiveOneRoundOptimized(boolean distinctMode, GridIndexer gridIndexer) {
 		super();
 		this.distinctMode = distinctMode;
 		this.gridIndexer=gridIndexer;
@@ -31,23 +30,6 @@ public class BCAIndexProgressiveOneRound  {
 	public Object findBestCatchmentAreas(List<POI> pois, double eps, int k,
 			ScoreFunction<POI> scoreFunction) {
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
-		Grid grid = new Grid(pois, eps);
-		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
-		IsOptimized=true;
-		Block block;
-		DependencyGraph dependencyGraph=new DependencyGraph(gridIndexer);
-		while (dependencyGraph.safeRegionCnt() < k && !queue.isEmpty()) {
-			block = queue.poll();
-			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
-		}
-		return dependencyGraph.getFinalResult().toList();
-	}
-
-	public Object findBestCatchmentAreas(List<POI> pois,int nodeNumber, HashMap<Integer,BorderResult> borderInfo, double eps, int k,
-										 ScoreFunction<POI> scoreFunction) {
-		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
-		this.borderInfo=borderInfo;
-		this.nodeNumber=nodeNumber;
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
 		Block block;
@@ -144,12 +126,6 @@ public class BCAIndexProgressiveOneRound  {
 			// It is not added to dependency graph
 			return;
 		//3rd Condition
-		else if (IsOptimized){
-			double leftScore=borderInfo.get(nodeNumber-1).rightScore;
-			double upScore=borderInfo.get(nodeNumber-gridIndexer.width()).downScore;
-			double cornerScore=borderInfo.get(nodeNumber-gridIndexer.width()-1).cornerScore;
-
-		}
 		else if (dependencyGraph.IsOverlapUnsafeRegion(candidate) || dependencyGraph.IsBorderRegion(candidate)) {
 			dependencyGraph.addUnsafeRegion(candidate);
 			if(dependencyGraph.IsDependencyIncluded(candidate)){

@@ -1,5 +1,7 @@
 package matt.definitions
 
+import matt.{POI, SpatialObject}
+
 import scala.collection.mutable.ListBuffer
 
 class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val minmaxLat:(Double,Double)) extends Serializable {
@@ -94,5 +96,66 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
     if (nodeI != width - 1 && (cellI % gridSizePerCell) == gridSizePerCell - 1)
       return nodeJ * width + nodeI + 1
     return -1
+  }
+
+  def getNodeNumber_Pos_Border(long: Double, lat: Double): Seq[(Int, Boolean)] = {
+    val result = new ListBuffer[(Int, Boolean)]()
+    val ((cellI, cellJ), (nodeI, nodeJ)) = getPointIndex(long, lat)
+    if (nodeI != 0 && (cellI % gridSizePerCell) == 0)
+      result += ((nodeJ * width + nodeI, true))
+    if (nodeJ != 0 && cellJ % gridSizePerCell == 0)
+      result += (((nodeJ - 1) * width + nodeI + 1, false))
+    if (nodeJ != width - 1 && cellJ % gridSizePerCell == gridSizePerCell - 1)
+      result += ((nodeJ * width + nodeI + 1, true))
+    if (nodeI != width - 1 && (cellI % gridSizePerCell) == gridSizePerCell - 1)
+      result += ((nodeJ * width + nodeI + 1, false))
+    if ((nodeJ != 0 && cellJ % gridSizePerCell == 0) && (nodeI != 0 && (cellI % gridSizePerCell) == 0)) {
+      result += (((nodeJ - 1) * width + nodeI, false))
+      result += (((nodeJ - 1) * width + nodeI, true))
+    }
+    return result
+  }
+
+  def get3BorderPartition(pois: Iterable[POI]): (Seq[POI], Seq[POI], Seq[POI]) = {
+    val right = new ListBuffer[POI]()
+    val down = new ListBuffer[POI]()
+    val corner = new ListBuffer[POI]()
+    for (poi <- pois) {
+      val ((cellI, cellJ), (nodeI, nodeJ)) = getPointIndex(poi.getPoint.getX(), poi.getPoint.getY())
+      if (nodeI != 0 && (cellI % gridSizePerCell) == 0)
+        right += (poi)
+      if (nodeI != width - 1 && (cellI % gridSizePerCell) == gridSizePerCell - 1)
+        right += (poi)
+      if (nodeJ != 0 && cellJ % gridSizePerCell == 0)
+        down += (poi)
+      if (nodeJ != width - 1 && cellJ % gridSizePerCell == gridSizePerCell - 1)
+        down += (poi)
+      if ((nodeJ != 0 && cellJ % gridSizePerCell == 0) && (nodeI != 0 && (cellI % gridSizePerCell) == 0)) {
+        corner += (poi)
+        corner += (poi)
+      }
+    }
+    return (right, down, corner)
+  }
+
+  def IsOnBorderLeft(long: Double, lat: Double): Boolean = {
+    val ((cellI, cellJ), (nodeI, nodeJ)) = getPointIndex(long, lat)
+    if (nodeI != 0 && (cellI % gridSizePerCell) == 0)
+      return true
+    return false
+  }
+
+  def IsOnBorderUp(long: Double, lat: Double): Boolean = {
+    val ((cellI, cellJ), (nodeI, nodeJ)) = getPointIndex(long, lat)
+    if (nodeJ != 0 && (cellJ % gridSizePerCell) == 0)
+      return true
+    return false
+  }
+
+  def IsOnBorderCorner(long: Double, lat: Double): Boolean = {
+    val ((cellI, cellJ), (nodeI, nodeJ)) = getPointIndex(long, lat)
+    if (nodeI != 0 && (cellI % gridSizePerCell) == 0 && nodeJ != 0 && (cellJ % gridSizePerCell) == 0)
+      return true
+    return false
   }
 }

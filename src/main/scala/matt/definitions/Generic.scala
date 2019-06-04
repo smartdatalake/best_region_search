@@ -17,37 +17,18 @@ object Generic {
         return true
     return false
   }
-  def borderPOIToKeyValue(row: Row, width: Int, minmaxLong: (Double, Double), minmaxLat: (Double, Double), eps: Double
-                          , geometryFactory: GeometryFactory, gridIndexer: GridIndexer): Seq[(Int, POI)] = {
-    var gridSize = 0.0
-    if ((minmaxLong._2 - minmaxLong._1) > (minmaxLat._2 - minmaxLat._1))
-      gridSize = (minmaxLong._2 - minmaxLong._1) / width
-    else
-      gridSize = (minmaxLat._2 - minmaxLat._1) / width
-    val cellSize = gridSize * eps
+
+  def borderPOIToKeyValue(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer): Seq[((Int, Boolean), POI)] = {
+    val pos = gridIndexer.getNodeNumber_Pos_Border(row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"))
     val keywords = row.getAs[String]("keywords").split(",").toList;
-    val long = row.getAs[Double]("longtitude")
-    val lat = row.getAs[Double]("latitude")
-    val result = ListBuffer[(Int, POI)]()
-    return gridIndexer.getNodeIndex(row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"))
-      .map(x => (x._2 * width + x._1 + 1, new POI(row.getAs[String]("id"), row.getAs[String]("name")
-        , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), keywords, 0, geometryFactory)))
+    return pos.map(x => (x, new POI(row.getAs[String]("id"), row.getAs[String]("name")
+      , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), keywords, 0, geometryFactory)))
   }
 
-  def poiToKeyValue(row: Row, width: Int, minmaxLong: (Double, Double), minmaxLat: (Double, Double), eps: Double
-                    , geometryFactory: GeometryFactory, gridIndexer: GridIndexer): Seq[(Int, POI)] = {
-    var gridSize = 0.0
-    if ((minmaxLong._2 - minmaxLong._1) > (minmaxLat._2 - minmaxLat._1))
-      gridSize = (minmaxLong._2 - minmaxLong._1) / width
-    else
-      gridSize = (minmaxLat._2 - minmaxLat._1) / width
-    val cellSize = gridSize * eps
+  def poiToKeyValue(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer): Seq[(Int, POI)] = {
     val keywords = row.getAs[String]("keywords").split(",").toList;
-    val long = row.getAs[Double]("longtitude")
-    val lat = row.getAs[Double]("latitude")
-    val result = ListBuffer[(Int, POI)]()
     return gridIndexer.getNodeIndex(row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"))
-      .map(x => (x._2 * width + x._1 + 1, new POI(row.getAs[String]("id"), row.getAs[String]("name")
+      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id"), row.getAs[String]("name")
         , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), keywords, 0, geometryFactory)))
   }
 

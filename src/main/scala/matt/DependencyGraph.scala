@@ -117,12 +117,27 @@ class DependencyGraph (gridIndexer: GridIndexer) {
     return indexToSpatialObjSafe.values.flatten.toList ::: indexToSpatialObjUnsafe.values.flatten.toList
   }
 
-  override def toString():String={
-    val safeCNT=indexToSpatialObjSafe.values.size;
-    val UnsafeCNT=indexToSpatialObjUnsafe.values.size;
-    val M_CNT=indexToSpatialObjM.values.size
-    val dependentBorderCellCNT=indexToDependentNeighborCell.size
-    return "Safe#"+safeCNT+", Unsafe#"+UnsafeCNT+", M_CNT#"+ M_CNT+", dependentBorderCell#"+dependentBorderCellCNT
+  override def toString(): String = {
+    val safeCNT = indexToSpatialObjSafe.values.size;
+    val UnsafeCNT = indexToSpatialObjUnsafe.values.size;
+    val M_CNT = indexToSpatialObjM.values.size
+    val dependentBorderCellCNT = indexToDependentNeighborCell.size
+    return "Safe#" + safeCNT + ", Unsafe#" + UnsafeCNT + ", M_CNT#" + M_CNT + ", dependentBorderCell#" + dependentBorderCellCNT
+  }
+
+  def IsOnUpBorder(spatialObject: SpatialObject): Boolean = {
+    gridIndexer.IsOnBorderUp(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
+      , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
+  }
+
+  def IsOnLeftBorder(spatialObject: SpatialObject): Boolean = {
+    gridIndexer.IsOnBorderLeft(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
+      , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
+  }
+
+  def IsOnCornerBorder(spatialObject: SpatialObject): Boolean = {
+    gridIndexer.IsOnBorderCorner(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
+      , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
   }
 }
 
