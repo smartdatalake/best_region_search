@@ -20,7 +20,8 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
 	private long overallStartTime, resultEndTime;
-
+	private int overall=0;
+	private int overlapping=0;
 	public BCAIndexProgressive(boolean distinctMode) {
 		super();
 		this.distinctMode = distinctMode;
@@ -75,7 +76,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 //		endTime = (System.nanoTime() - startTime) / 1000000;
 //		System.out.println(" DONE [" + endTime + " msec]");
 		// System.out.println("Max queue size: " + maxQueueSize);
-
+System.out.println(overall);
 		return topk;
 	}
 
@@ -153,7 +154,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		// generate candidate result
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
-
+overall++;
 		// Envelope e = block.envelope; // with tight mbr
 
 		// if this result is valid, add it to top-k

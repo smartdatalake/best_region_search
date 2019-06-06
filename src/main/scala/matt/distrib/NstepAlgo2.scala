@@ -19,7 +19,7 @@ object NstepAlgo2 {
    // nodeToPoint.groupByKey().foreach(x=>println(x._1+":: "+x._2.toList.size))
   //  println(listOfBCAFinder.foreach(x=>println(x._1+" :: "+SizeEstimator.estimate(x._2)/(1024*1024))) )
     var iteration = 0;
-    val Kprime = 150;
+    val Kprime = 500;
     while (Ans.length < K) {
       println("Current Iteration: " + iteration);
       // var localAnswers = ListBuffer[SpatialObject]();
@@ -52,8 +52,10 @@ object NstepAlgo2 {
     println("Final Result in " + iteration + " iteration")
     println("\n\n\n");
 
-    for (x <- Ans) {
+    val out=Ans.sortBy(_.getId).reverse
+    for (x <- out) {
       println(x.getId);
     }
+
   }
 }

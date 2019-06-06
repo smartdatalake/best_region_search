@@ -35,8 +35,10 @@ object OnestepAlgo {
     println("Final Result");
     println("\n\n\n");
 
-    for (x <- Ans) {
+    val out=Ans.sortBy(_.getId).reverse
+    for (x <- out) {
       println(x.getId);
     }
+
   }
 }

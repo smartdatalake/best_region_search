@@ -16,6 +16,8 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.log4j.Logger
 import org.apache.log4j.Level
 
+import scala.collection.mutable
+
 object Run {
  def main(args: Array[String]) {
 
@@ -25,7 +27,7 @@ object Run {
   Logger.getLogger("akka").setLevel(Level.OFF)
   val spark = SparkSession
     .builder
-    .master("local[*]")
+   // .master("local[*]")
     .appName("Simple Application")
     .config("spark.executor.memory", "7g")
     .config("spark.driver.maxResultSize", "3g")
@@ -42,9 +44,10 @@ object Run {
 
   val eps = 0.001
   // choose number of expected results
-  val topk = 150
+  val topk = 300
   val decayConstant = 0.5
-  val cores = 16
+  val cores = 128*128
+
   val width = scala.math.sqrt(cores).toInt
   //////end Param & config
   //////////////////////////////////////
@@ -52,17 +55,17 @@ object Run {
   //////Read and split CSV coordination to (nodeNumber, POI) (assign poi to each worker)
   ///////////////////////////////////////////////////////////////
 
-  //val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load("hdfs:///input.csv").drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null));;
-  val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load(poiInputFile).drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null));
+  val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load("hdfs:///input.csv").drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null));;
+  //val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load(poiInputFile).drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null));
 
   val minLong = inputData.select("longtitude").reduce((x, y) => if (x.getAs[Double]("longtitude") < y.getAs[Double]("longtitude")) x else y).getAs[Double](0)
   val maxLong = inputData.select("longtitude").reduce((x, y) => if (x.getAs[Double]("longtitude") > y.getAs[Double]("longtitude")) x else y).getAs[Double](0)
   val minLat = inputData.select("latitude").reduce((x, y) => if (x.getAs[Double]("latitude") < y.getAs[Double]("latitude")) x else y).getAs[Double](0)
   val maxLat = inputData.select("latitude").reduce((x, y) => if (x.getAs[Double]("latitude") > y.getAs[Double]("latitude")) x else y).getAs[Double](0)
 
-  val minmaxLong = (minLong - 0.00001, maxLong + 0.0001);
+  val minmaxLong = (minLong - 0.01, maxLong + 0.01);
   println("\n\nminmaxLONG: " + minmaxLong + "\n\n");
-  val minmaxLat = (minLat - 0.00001, maxLat + 0.00001);
+  val minmaxLat = (minLat - 0.01, maxLat + 0.01);
   println("\n\nminmaxLat: " + minmaxLat + "\n\n");
 
   val gridIndexer = new GridIndexer(width, eps, minmaxLong, minmaxLat)
@@ -70,11 +73,17 @@ object Run {
   // find to which node does each point belongs to : (NodeNo,Row)
   val geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
   val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer)).cache();
-  val borderPOI = inputData.rdd.map(x => {
-   (gridIndexer.getNodeNumber_Border(x.getAs[Double]("longtitude")
-    , x.getAs[Double]("latitude")), x)
+  val p=nodeToPoint.groupByKey().map(x=>{
+   gridIndexer.getOverlappingBorderPart(x._1,x._2)
+  })
+  val oo:mutable.HashMap[Int,(Array[Array[Int]],Array[Array[Int]],Array[Array[Int]])]=new mutable.HashMap[Int,(Array[Array[Int]],Array[Array[Int]],Array[Array[Int]])]()
+  p.foreach(x=>oo.put(x._1,x._2))
+  val borderPOI = inputData.rdd.map(row => {
+   (gridIndexer.getNodeNumber_Border(row.getAs[Double]("longtitude")
+    , row.getAs[Double]("latitude")), new POI(row.getAs[String]("id"), row.getAs[String]("name")
+    , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), new util.ArrayList[String](), 0, geometryFactory))
   }).filter(x => x._1 > 0)
-  println(borderPOI.collect().toList)
+  //println(borderPOI.collect().toList.size)
   ////////End Read & split data poi to each worker
   //////////////////////////////////////////////////////////////////////////////
 
@@ -97,9 +106,9 @@ object Run {
   if (OneStep) {
    matt.distrib.OnestepAlgo.Run(nodeToPoint, eps, decayConstant, topk, gridIndexer);
   }
-
-  if (OneStepOptimized) {
-   matt.distrib.OnestepAlgoOptimized.Run(nodeToPoint, borderPOI, eps, decayConstant, topk, gridIndexer)
+ if (OneStepOptimized) {
+  println("opt")
+   matt.distrib.OnestepAlgoOptimized.Run(nodeToPoint, oo, eps, decayConstant, topk, gridIndexer)
   }
 
   spark.stop()

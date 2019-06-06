@@ -48,12 +48,12 @@ public class Grid implements Serializable {
 		}
 		
 		// print some grid statistics
-		System.out.println("Number of cells: " + numberOfCells);
-		System.out.println("Max points per cell: " + maxCellSize);
-		System.out.println("minX: " + minX);
-		System.out.println("maxX: " + maxX);
-		System.out.println("minY: " + minY);
-		System.out.println("maxY: " + maxY);
+	//	System.out.println("Number of cells: " + numberOfCells);
+	//	System.out.println("Max points per cell: " + maxCellSize);
+	//	System.out.println("minX: " + minX);
+	//	System.out.println("maxX: " + maxX);
+	//	System.out.println("minY: " + minY);
+	//	System.out.println("maxY: " + maxY);
 	}
 
 	public List<POI> getNeighbors(POI poi) {
