@@ -9,7 +9,7 @@ import java.util.Map;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
-
+import java.util.ArrayList;
 public class Grid implements Serializable {
 
 	private Map<Integer, Map<Integer, List<POI>>> cells;
@@ -36,7 +36,6 @@ public class Grid implements Serializable {
 				numberOfCells++;
 			}
 			cells.get(i).get(j).add(poi);
-			
 			if (cells.get(i).get(j).size() > maxCellSize) {
 				maxCellSize = cells.get(i).get(j).size();
 			}
@@ -54,6 +53,10 @@ public class Grid implements Serializable {
 	//	System.out.println("maxX: " + maxX);
 	//	System.out.println("minY: " + minY);
 	//	System.out.println("maxY: " + maxY);
+	/*	for (Map<Integer,List<POI>> t:cells.values())
+			for(List t2:t.values())*/
+
+
 	}
 
 	public List<POI> getNeighbors(POI poi) {

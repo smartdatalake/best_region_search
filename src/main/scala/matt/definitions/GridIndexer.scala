@@ -183,9 +183,8 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
   }
   def getCellIndexInGrid(node: Int,spatialObject: SpatialObject): (Int, Int) = {
     val nodeI = (node - 1) % width
-    var nodeJ = ((node - 1) / width.asInstanceOf[Double]).toInt
-    var (cellI, cellJ) = getCellIndex(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
-      , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
+    val nodeJ = ((node - 1) / width.asInstanceOf[Double]).toInt
+    val (cellI, cellJ) = getCellIndex(spatialObject.getGeometry.getCentroid.getX-(cellSize/2), spatialObject.getGeometry.getCentroid.getY+cellSize/2)
     return ((cellI - nodeI * gridSizePerCell), cellJ - nodeJ * gridSizePerCell)
   }
 }

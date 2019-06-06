@@ -154,7 +154,7 @@ System.out.println(overall);
 		// generate candidate result
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
-overall++;
+		overall++;
 		// Envelope e = block.envelope; // with tight mbr
 
 		// if this result is valid, add it to top-k
@@ -177,13 +177,18 @@ overall++;
 			SpatialObject result = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
 					null, block.utilityScore, geometryFactory.toGeometry(e));
 			result.setAttributes(new HashMap<Object, Object>());
-			result.getAttributes().put("coveredPoints", block.pois);
+			//result.getAttributes().put("coveredPoints", block.pois);
 
 			resultEndTime = (System.nanoTime() - overallStartTime) / 1000000;
-			result.getAttributes().put("executionTime", resultEndTime);
+			//result.getAttributes().put("executionTime", resultEndTime);
+			if ((result.getGeometry().getCoordinates()[1].x - result.getGeometry().getCoordinates()[0].x > eps)
+					|| ((result.getGeometry().getCoordinates()[2].y - result.getGeometry().getCoordinates()[0].y > eps))) {
+				System.out.println(result.getGeometry().getCoordinates()[1].x - result.getGeometry().getCoordinates()[0].x);
+				System.out.println((result.getGeometry().getCoordinates()[2].y - result.getGeometry().getCoordinates()[0].y));
+			}
 			topk.add(result);
 
-		//	System.out.println("Results so far: " + topk.size());
+			//	System.out.println("Results so far: " + topk.size());
 		}
 	}
 

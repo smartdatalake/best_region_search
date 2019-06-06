@@ -27,7 +27,7 @@ object Run {
   Logger.getLogger("akka").setLevel(Level.OFF)
   val spark = SparkSession
     .builder
-   // .master("local[*]")
+  //  .master("local[*]")
     .appName("Simple Application")
     .config("spark.executor.memory", "7g")
     .config("spark.driver.maxResultSize", "3g")
@@ -38,13 +38,14 @@ object Run {
   val hadoopConfig: Configuration = spark.sparkContext.hadoopConfiguration
   hadoopConfig.set("fs.hdfs.impl", classOf[org.apache.hadoop.hdfs.DistributedFileSystem].getName)
   hadoopConfig.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
-  val poiInputFile = "/home/hamid/5.csv";
+  val poiInputFile = "/home/hamid/osmpois-planet-cleaned.csv";
+  val poiInputFile4 = "/home/hamid/5.csv";
   val poiInputFile2 = "/home/hamid/temp.csv";
   val poiInputFile3 = "/home/hamid/input.csv";
 
-  val eps = 0.001
+  val eps = 0.0001
   // choose number of expected results
-  val topk = 300
+  val topk = 50
   val decayConstant = 0.5
   val cores = 128*128
 
@@ -55,7 +56,7 @@ object Run {
   //////Read and split CSV coordination to (nodeNumber, POI) (assign poi to each worker)
   ///////////////////////////////////////////////////////////////
 
-  val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load("hdfs:///input.csv").drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null));;
+  val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load("hdfs:///input2.csv").drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null));;
   //val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load(poiInputFile).drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null));
 
   val minLong = inputData.select("longtitude").reduce((x, y) => if (x.getAs[Double]("longtitude") < y.getAs[Double]("longtitude")) x else y).getAs[Double](0)
@@ -83,7 +84,7 @@ object Run {
     , row.getAs[Double]("latitude")), new POI(row.getAs[String]("id"), row.getAs[String]("name")
     , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), new util.ArrayList[String](), 0, geometryFactory))
   }).filter(x => x._1 > 0)
-  //println(borderPOI.collect().toList.size)
+ // println(borderPOI.collect().toList.size)
   ////////End Read & split data poi to each worker
   //////////////////////////////////////////////////////////////////////////////
 
