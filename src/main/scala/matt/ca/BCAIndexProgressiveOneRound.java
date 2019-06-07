@@ -1,57 +1,51 @@
 package matt.ca;
 import matt.*;
-import scala.Array;
-import scala.Int;
-import scala.collection.JavaConversions;
 
 import matt.definitions.GridIndexer;
 import matt.score.ScoreFunction;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
-import java.lang.instrument.Instrumentation;
 import java.util.*;
 
-import scala.collection.JavaConverters;
-import shapeless.Tuple;
 
-public class BCAIndexProgressiveOneRound  {
+public class BCAIndexProgressiveOneRound {
 	private boolean IsOptimized;
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
-	private long overallStartTime, resultEndTime;
 	private GridIndexer gridIndexer;
-	private int opt1=0;
-	private int overall=0;
-	private int overlapUnsafe=0;
-	private int overlapSafe=0;
-	private int overlapBorder=0;
-	private int[][] up,left,corner;
+	private int opt1 = 0;
+	private int overall = 0;
+	private int overlapUnsafe = 0;
+	private int overlapSafe = 0;
+	private int overlapBorder = 0;
+	private int[][] up, left, corner;
 	private int node;
-	public BCAIndexProgressiveOneRound(boolean distinctMode,GridIndexer gridIndexer) {
+
+	public BCAIndexProgressiveOneRound(boolean distinctMode, GridIndexer gridIndexer) {
 		super();
 		this.distinctMode = distinctMode;
-		this.gridIndexer=gridIndexer;
+		this.gridIndexer = gridIndexer;
 	}
 
-
-	public Object findBestCatchmentAreas(List<POI> pois, double eps, int k,
-			ScoreFunction<POI> scoreFunction) {
+	public Object findBestCatchmentAreas(List<POI> pois, double eps, int k, ScoreFunction<POI> scoreFunction) {
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
 		Block block;
-		DependencyGraph dependencyGraph=new DependencyGraph(gridIndexer);
+		DependencyGraph dependencyGraph = new DependencyGraph(gridIndexer);
 		while (dependencyGraph.safeRegionCnt() < k && !queue.isEmpty()) {
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
+		if (opt1> 0)
+			System.out.println(pois.size() + "      " + dependencyGraph.safeRegionCnt() + "         " + overall + "      " + opt1 + "      " + overlapUnsafe + "      " + overlapBorder + "      " + overlapSafe);
 		return dependencyGraph.getFinalResult().toList();
 	}
 
-	public Object findBestCatchmentAreas(List<POI> pois,int nodeNum,  int[][] up,int[][] left,int[][] corner
+	public Object findBestCatchmentAreas(List<POI> pois, int nodeNum, int[][] up, int[][] left, int[][] corner
 			, double eps, int k, ScoreFunction<POI> scoreFunction) {
-		this.node=nodeNum;
+		this.node = nodeNum;
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		this.up = up;
 		this.left = left;
@@ -59,14 +53,14 @@ public class BCAIndexProgressiveOneRound  {
 		IsOptimized = true;
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
-		grid=null;
 		Block block;
 		DependencyGraph dependencyGraph = new DependencyGraph(gridIndexer);
 		while (dependencyGraph.safeRegionCnt() < k && !queue.isEmpty()) {
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
-		System.out.println(pois.size()+"      "+dependencyGraph.safeRegionCnt()+"         "+overall + "      " + opt1 + "      " + overlapUnsafe + "      " + overlapBorder + "      " + overlapSafe);
+		if (opt1 > 0)
+			System.out.println(pois.size() + "      " + dependencyGraph.safeRegionCnt() + "         " + overall + "      " + opt1 + "      " + overlapUnsafe + "      " + overlapBorder + "      " + overlapSafe);
 		return dependencyGraph.getFinalResult().toList();
 	}
 
@@ -108,20 +102,7 @@ public class BCAIndexProgressiveOneRound  {
 	}
 
 	private void processBlock(Block block, double eps, ScoreFunction<POI> scoreFunction, PriorityQueue<Block> queue,
-			DependencyGraph dependencyGraph) {
-
-		// int pointsBefore = block.pois.size();
-
-		// if (distinctMode) {
-		// removeOverlappingPoints(block, topk);
-		// }
-
-		// if (block.pois.size() < pointsBefore) {
-		// // recreate block and reinsert it in the queue
-		// block = new Block(block.pois, scoreFunction, block.type,
-		// block.orientation, eps, geometryFactory);
-		// queue.add(block);
-		// } else {
+							  DependencyGraph dependencyGraph) {
 		if (block.type == Block.BLOCK_TYPE_REGION) {
 			if (IsOptimized)
 				inspectResultOpt(block, eps, dependencyGraph);
@@ -142,7 +123,7 @@ public class BCAIndexProgressiveOneRound  {
 		// }
 	}
 
-	private void inspectResultOpt(Block block, double eps,DependencyGraph dependencyGraph) {
+	private void inspectResultOpt(Block block, double eps, DependencyGraph dependencyGraph) {
 		// generate candidate result
 		overall++;
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
@@ -153,23 +134,23 @@ public class BCAIndexProgressiveOneRound  {
 		scala.Tuple2 index = gridIndexer.getCellIndexInGrid(node, candidate);
 		int cellI = (int) index._1();
 		int cellJ = (int) index._2();
-		int con=dependencyGraph.overlapCon(candidate);
-		if (con==-1 && !dependencyGraph.IsBorderRegion(candidate))
+		int con = dependencyGraph.overlapCon(candidate);
+		if (con == 0 && !dependencyGraph.IsBorderRegion(candidate))
 			dependencyGraph.addSafeRegion(candidate);
 			//2nd Condition
-		else if (con==0) {
+		else if (con == 1) {
 			overlapSafe++;
 			// It is not added to dependency graph
 			return;
 		}
 		//3rd Condition
-		else if ((((cellI==0)&&(cellJ==0)) && candidate.getScore() > corner[0][0] + corner[0][1] + corner[1][0] + corner[1][1])
-				|| ((cellJ==0&&cellI>0)&& candidate.getScore() > up[0][cellI] + up[0][cellI - 1] + up[1][cellI] + up[1][cellI - 1])
-				|| ((cellI==0&&cellJ>0) && candidate.getScore() > left[cellJ][0] + left[cellJ - 1][0] + left[cellJ][1] + left[cellJ - 1][1])) {
+		else if ((((cellI == 0) && (cellJ == 0)) && candidate.getScore() > corner[0][0] + corner[0][1] + corner[1][0] + corner[1][1])
+				|| ((cellJ == 0 && cellI > 0) && candidate.getScore() > up[0][cellI] + up[0][cellI - 1] + up[1][cellI] + up[1][cellI - 1])
+				|| ((cellI == 0 && cellJ > 0) && candidate.getScore() > left[cellJ][0] + left[cellJ - 1][0] + left[cellJ][1] + left[cellJ - 1][1])) {
 			dependencyGraph.addSafeRegion(candidate);
 			opt1++;
-		} else if (con==1 || dependencyGraph.IsBorderRegion(candidate)) {
-			if (con==1)
+		} else if (con == 2 || dependencyGraph.IsBorderRegion(candidate)) {
+			if (con == 2)
 				overlapUnsafe++;
 			if (dependencyGraph.IsBorderRegion(candidate))
 				overlapBorder++;
@@ -186,46 +167,38 @@ public class BCAIndexProgressiveOneRound  {
 		}
 	}
 
-	private void inspectResult(Block block, double eps,DependencyGraph dependencyGraph) {
+	private void inspectResult(Block block, double eps, DependencyGraph dependencyGraph) {
 		// generate candidate result
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
 		SpatialObject candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
 				null, block.utilityScore, geometryFactory.toGeometry(e));
-		int con=dependencyGraph.overlapCon(candidate);
+		int con = dependencyGraph.overlapCon(candidate);
 
 		//1st Condition
-		if (con==-1 && !dependencyGraph.IsBorderRegion(candidate))
+		if (con == 0 && !dependencyGraph.IsBorderRegion(candidate))
 			dependencyGraph.addSafeRegion(candidate);
 			//2nd Condition
-		else if (con==0)
+		else if (con == 1)
 			// It is not added to dependency graph
 			return;
 			//3rd Condition
-		else if (con==1 || dependencyGraph.IsBorderRegion(candidate)) {
+		else if (con == 2 || dependencyGraph.IsBorderRegion(candidate)) {
+			if (con == 2)
+				overlapUnsafe++;
+			if (dependencyGraph.IsBorderRegion(candidate))
+				overlapBorder++;
 			dependencyGraph.addUnsafeRegion(candidate);
-			if(dependencyGraph.IsDependencyIncluded(candidate)){
+			if (dependencyGraph.IsDependencyIncluded(candidate)) {
 				// Do not add Safe
 				// Do not add M
 				return;
-			}
-			else{
+			} else {
 				dependencyGraph.increaseSafeCNT();
 				dependencyGraph.addM(candidate);
 			}
 
 		}
-
-/*		if (isDistinct) {
-
-			result.setAttributes(new HashMap<Object, Object>());
-			result.getAttributes().put("coveredPoints", block.pois);
-
-			resultEndTime = (System.nanoTime() - overallStartTime) / 1000000;
-			result.getAttributes().put("executionTime", resultEndTime);
-
-			System.out.println("Results so far: " + topk.size());
-		}*/
 	}
 
 	@SuppressWarnings("unused")

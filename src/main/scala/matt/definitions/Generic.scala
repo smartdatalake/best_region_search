@@ -33,10 +33,13 @@ object Generic {
   }
 
   def intersects(point1: SpatialObject, point2: SpatialObject): Boolean = {
+    if(point2==null) return false
+    if(point2==null) return false
     point1.getGeometry().intersects(point2.getGeometry())
   }
 
   def intersectsList(point: SpatialObject, list: ListBuffer[SpatialObject]): Boolean = {
+    if (list==null||list.size==0)return false
     for (point2 <- list)
       if (intersects(point, point2))
         return true

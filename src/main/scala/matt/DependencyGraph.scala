@@ -28,15 +28,15 @@ class DependencyGraph (gridIndexer: GridIndexer) {
   def addUnsafeRegion(spatialObject: SpatialObject): Unit = {
     val (cellI,cellJ)=gridIndexer.getCellIndex(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
       , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
-    var t= indexToSpatialObj.get((cellI,cellJ)).getOrElse(new SpatialObject, new ListBuffer[ SpatialObject])
-    if(t==null) {
+    var t= indexToSpatialObj.get((cellI,cellJ)).getOrElse(null, null)
+    if(t==(null,null)) {
       val p = new ListBuffer[SpatialObject];
       p += spatialObject
-      indexToSpatialObj.+=(((cellI, cellJ), (new SpatialObject(), p)))
+      indexToSpatialObj.+=(((cellI, cellJ), (null, p)))
     }
     else {
       t._2.+=( spatialObject)
-      indexToSpatialObj.+=(((cellI, cellJ), (new SpatialObject(), t._2)))
+      indexToSpatialObj.+=(((cellI, cellJ), (null, t._2)))
     }
   }
 
@@ -61,18 +61,20 @@ class DependencyGraph (gridIndexer: GridIndexer) {
     for (i <- -1 to 1)
       for (j <- -1 to 1) {
         var t = indexToSpatialObj.get((cellI + i, cellJ + j)).getOrElse(null,null)
-        if (t!=null &&t._1 != null && Generic.intersects(spatialObject, t._1))
-          safe = true
-        if (t!=null &&t._2 != null && Generic.intersectsList(spatialObject, t._2))
-          unsafe = true
+        if(t!=(null,null)) {
+          if (t != null && t._1 != null && Generic.intersects(spatialObject, t._1))
+            safe = true
+          if (t != null && t._2 != null && Generic.intersectsList(spatialObject, t._2))
+            unsafe = true
+        }
       }
-    if (safe && unsafe)
-      return 2
-    if (safe)
+    if (!safe && !unsafe)
       return 0
-    if (unsafe)
+    if (safe)
       return 1
-    return -1
+    if (unsafe)
+      return 2
+    return 0
   }
 
 

@@ -23,7 +23,7 @@ object NstepAlgo {
   def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int) {
     var Ans = List[SpatialObject]();
     var iteration = 0;
-    val Kprime = 10;
+    val Kprime = 150;
 
     while (Ans.length < K) {
       println("Current Iteration: " + iteration);
