@@ -38,7 +38,7 @@ public class BCAIndexProgressiveOneRound {
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
-		if (opt1> 0)
+		if (overlapUnsafe+overlapBorder> 0)
 			System.out.println(pois.size() + "      " + dependencyGraph.safeRegionCnt() + "         " + overall + "      " + opt1 + "      " + overlapUnsafe + "      " + overlapBorder + "      " + overlapSafe);
 		return dependencyGraph.getFinalResult().toList();
 	}
