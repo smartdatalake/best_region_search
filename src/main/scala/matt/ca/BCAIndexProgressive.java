@@ -14,7 +14,7 @@ import matt.Grid;
 import matt.POI;
 import matt.SpatialObject;
 import matt.score.ScoreFunction;
-
+import java.lang.instrument.Instrumentation;
 public class BCAIndexProgressive extends BCAFinder<POI> {
 
 	private boolean distinctMode;
@@ -35,7 +35,9 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 
 	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k,
 			ScoreFunction<POI> scoreFunction,List<SpatialObject> previous) {
-
+	//System.err.println("pois "+pois);
+	//	System.err.println(pois.get(0).getPoint());
+	//	System.err.println();
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		long startTime, endTime;
 
@@ -55,10 +57,13 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 	//	System.out.println("Initializing the queue...");
 	//	startTime = System.nanoTime();
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
+		Instrumentation o;
+		//o.getObjectSize(queue);
 	//	endTime = (System.nanoTime() - startTime) / 1000000;
 	//	System.out.println(" DONE [" + endTime + " msec]");
 		// int maxQueueSize = queue.size();
 
+grid=null;
 		/* Process the queue. */
 		Block block;
 	//	System.out.println("Processing the queue...");
@@ -114,7 +119,6 @@ System.out.println(overall);
 				queue.add(block);
 			}
 		}
-
 		return queue;
 	}
 
@@ -176,16 +180,11 @@ System.out.println(overall);
 		if (isDistinct) {
 			SpatialObject result = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
 					null, block.utilityScore, geometryFactory.toGeometry(e));
-			result.setAttributes(new HashMap<Object, Object>());
+		//	result.setAttributes(new HashMap<Object, Object>());
 			//result.getAttributes().put("coveredPoints", block.pois);
 
 			resultEndTime = (System.nanoTime() - overallStartTime) / 1000000;
 			//result.getAttributes().put("executionTime", resultEndTime);
-			if ((result.getGeometry().getCoordinates()[1].x - result.getGeometry().getCoordinates()[0].x > eps)
-					|| ((result.getGeometry().getCoordinates()[2].y - result.getGeometry().getCoordinates()[0].y > eps))) {
-				System.out.println(result.getGeometry().getCoordinates()[1].x - result.getGeometry().getCoordinates()[0].x);
-				System.out.println((result.getGeometry().getCoordinates()[2].y - result.getGeometry().getCoordinates()[0].y));
-			}
 			topk.add(result);
 
 			//	System.out.println("Results so far: " + topk.size());

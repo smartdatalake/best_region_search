@@ -205,9 +205,9 @@ public class UtilityScoreFunction implements Serializable {
 			}
 		}
 
-		double rel = Double.parseDouble(result.getAttributes().get("relevanceScore").toString());
-		double discountedRelevance = rel * Math.exp(-decayConstant * maxSim);
-
-		return discountedRelevance;
+	//	double rel = Double.parseDouble(result.getAttributes().get("relevanceScore").toString());
+	//	double discountedRelevance = rel * Math.exp(-decayConstant * maxSim);
+System.out.println("fix");
+		return 0;
 	}
 }

@@ -118,25 +118,7 @@ public class BCAIndexProgressiveOneRoundOptimized {
 		SpatialObject candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
 				null, block.utilityScore, geometryFactory.toGeometry(e));
 
-		//1st Condition
-		if (!dependencyGraph.IsOverlapAnyRegion(candidate) && !dependencyGraph.IsBorderRegion(candidate))
-			dependencyGraph.addSafeRegion(candidate);
-		//2nd Condition
-		else if (dependencyGraph.IsOverlapSafeRegion(candidate))
-			// It is not added to dependency graph
-			return;
-		//3rd Condition
-		else if (dependencyGraph.IsOverlapUnsafeRegion(candidate) || dependencyGraph.IsBorderRegion(candidate)) {
-			dependencyGraph.addUnsafeRegion(candidate);
-			if(dependencyGraph.IsDependencyIncluded(candidate)){
-				// Do not add Safe
-				// Do not add M
-				return;
-			}
-			else{
-				dependencyGraph.increaseSafeCNT();
-				dependencyGraph.addM(candidate);
-			}
+
 
 		}
 
@@ -150,7 +132,7 @@ public class BCAIndexProgressiveOneRoundOptimized {
 
 			System.out.println("Results so far: " + topk.size());
 		}*/
-	}
+
 
 	@SuppressWarnings("unused")
 	private void removeOverlappingPoints(Block block, List<SpatialObject> topk) {

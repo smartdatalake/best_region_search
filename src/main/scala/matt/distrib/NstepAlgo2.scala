@@ -1,3 +1,4 @@
+/*
 /* SimpleApp.scala */
 package matt.distrib
 
@@ -59,3 +60,4 @@ object NstepAlgo2 {
 
   }
 }
+*/

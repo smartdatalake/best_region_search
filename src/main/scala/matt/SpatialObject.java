@@ -14,10 +14,10 @@ import org.locationtech.jts.geom.PrecisionModel;
 public class SpatialObject implements Comparable<SpatialObject> , Serializable {
 	private String id;
 	private String name;
-	private List<String> keywords;
+	//private List<String> keywords;
 	private double score;
-	private Geometry geometry;
-	private Map<Object, Object> attributes;
+	private  Geometry geometry;
+	//private Map<Object, Object> attributes;
 
 	public SpatialObject() {
 		
@@ -27,10 +27,10 @@ public class SpatialObject implements Comparable<SpatialObject> , Serializable {
 		super();
 		this.id = (id != null && id.length() != 0) ? id : UUID.randomUUID().toString();
 		this.name = name;
-		this.keywords = keywords;
+	//	this.keywords = keywords;
 		this.score = score;
 		this.geometry = geometry;
-		this.attributes = new HashMap<Object, Object>();
+	//	this.attributes = new HashMap<Object, Object>();
 	}
 	@Override
 	public String toString(){
@@ -52,13 +52,13 @@ public class SpatialObject implements Comparable<SpatialObject> , Serializable {
 		this.name = name;
 	}
 
-	public List<String> getKeywords() {
+	/*public List<String> getKeywords() {
 		return keywords;
 	}
 
 	public void setKeywords(List<String> keywords) {
 		this.keywords = keywords;
-	}
+	}*/
 
 	public double getScore() {
 		return score;
@@ -76,6 +76,7 @@ public class SpatialObject implements Comparable<SpatialObject> , Serializable {
 		this.geometry = geometry;
 	}
 
+/*
 	public Map<Object, Object> getAttributes() {
 		return attributes;
 	}
@@ -83,6 +84,7 @@ public class SpatialObject implements Comparable<SpatialObject> , Serializable {
 	public void setAttributes(Map<Object, Object> attributes) {
 		this.attributes = attributes;
 	}
+*/
 
 	public static <T extends SpatialObject> Envelope getEnvelope(List<T> objects) {
 		GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(),

@@ -9,7 +9,7 @@ import matt.score.ScoreFunction;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
-
+import java.lang.instrument.Instrumentation;
 import java.util.*;
 
 import scala.collection.JavaConverters;
@@ -59,13 +59,14 @@ public class BCAIndexProgressiveOneRound  {
 		IsOptimized = true;
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
+		grid=null;
 		Block block;
 		DependencyGraph dependencyGraph = new DependencyGraph(gridIndexer);
 		while (dependencyGraph.safeRegionCnt() < k && !queue.isEmpty()) {
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
-		System.out.println(pois.size()+"      "+dependencyGraph.safeRegionCnt()+"         "+overall + "      " + opt1 + "      " + overlapUnsafe + "      " + overlapBorder + "      " + overlapSafe + "     " + dependencyGraph.indexToSpatialObjUnsafe().values().size());
+		System.out.println(pois.size()+"      "+dependencyGraph.safeRegionCnt()+"         "+overall + "      " + opt1 + "      " + overlapUnsafe + "      " + overlapBorder + "      " + overlapSafe);
 		return dependencyGraph.getFinalResult().toList();
 	}
 
@@ -103,7 +104,6 @@ public class BCAIndexProgressiveOneRound  {
 				queue.add(block);
 			}
 		}
-
 		return queue;
 	}
 
@@ -153,10 +153,11 @@ public class BCAIndexProgressiveOneRound  {
 		scala.Tuple2 index = gridIndexer.getCellIndexInGrid(node, candidate);
 		int cellI = (int) index._1();
 		int cellJ = (int) index._2();
-		if (!dependencyGraph.IsOverlapAnyRegion(candidate) && !dependencyGraph.IsBorderRegion(candidate))
+		int con=dependencyGraph.overlapCon(candidate);
+		if (con==-1 && !dependencyGraph.IsBorderRegion(candidate))
 			dependencyGraph.addSafeRegion(candidate);
 			//2nd Condition
-		else if (dependencyGraph.IsOverlapSafeRegion(candidate)) {
+		else if (con==0) {
 			overlapSafe++;
 			// It is not added to dependency graph
 			return;
@@ -167,8 +168,8 @@ public class BCAIndexProgressiveOneRound  {
 				|| ((cellI==0&&cellJ>0) && candidate.getScore() > left[cellJ][0] + left[cellJ - 1][0] + left[cellJ][1] + left[cellJ - 1][1])) {
 			dependencyGraph.addSafeRegion(candidate);
 			opt1++;
-		} else if (dependencyGraph.IsOverlapUnsafeRegion(candidate) || dependencyGraph.IsBorderRegion(candidate)) {
-			if (dependencyGraph.IsOverlapUnsafeRegion(candidate))
+		} else if (con==1 || dependencyGraph.IsBorderRegion(candidate)) {
+			if (con==1)
 				overlapUnsafe++;
 			if (dependencyGraph.IsBorderRegion(candidate))
 				overlapBorder++;
@@ -191,16 +192,17 @@ public class BCAIndexProgressiveOneRound  {
 		e.expandBy(eps / 2); // with fixed size eps
 		SpatialObject candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
 				null, block.utilityScore, geometryFactory.toGeometry(e));
+		int con=dependencyGraph.overlapCon(candidate);
 
 		//1st Condition
-		if (!dependencyGraph.IsOverlapAnyRegion(candidate) && !dependencyGraph.IsBorderRegion(candidate))
+		if (con==-1 && !dependencyGraph.IsBorderRegion(candidate))
 			dependencyGraph.addSafeRegion(candidate);
 			//2nd Condition
-		else if (dependencyGraph.IsOverlapSafeRegion(candidate))
+		else if (con==0)
 			// It is not added to dependency graph
 			return;
 			//3rd Condition
-		else if (dependencyGraph.IsOverlapUnsafeRegion(candidate) || dependencyGraph.IsBorderRegion(candidate)) {
+		else if (con==1 || dependencyGraph.IsBorderRegion(candidate)) {
 			dependencyGraph.addUnsafeRegion(candidate);
 			if(dependencyGraph.IsDependencyIncluded(candidate)){
 				// Do not add Safe

@@ -53,10 +53,9 @@ public class Grid implements Serializable {
 	//	System.out.println("maxX: " + maxX);
 	//	System.out.println("minY: " + minY);
 	//	System.out.println("maxY: " + maxY);
-	/*	for (Map<Integer,List<POI>> t:cells.values())
-			for(List t2:t.values())*/
-
-
+		for (Map<Integer,List<POI>> t:cells.values())
+			for(List t2:t.values())
+				((ArrayList)t2).trimToSize();
 	}
 
 	public List<POI> getNeighbors(POI poi) {
