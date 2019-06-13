@@ -11,6 +11,7 @@ class DependencyGraph (gridIndexer: GridIndexer) {
  // val indexToSpatialObjUnsafe = new HashMap[(Int, Int), Set[SpatialObject]] with MultiMap[(Int, Int), SpatialObject]
   val indexToSpatialObjM = new HashMap[(Int, Int), Set[SpatialObject]] with MultiMap[(Int, Int), SpatialObject]
   val indexToDependentNeighborCell = new mutable.HashSet[(Int, Int)]()
+  val duplicate = new mutable.HashSet[String]
   var safeRegionCnt: Int = 0
 
   def increaseSafeCNT() = {

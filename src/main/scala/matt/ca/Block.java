@@ -74,10 +74,11 @@ public class Block implements Comparable<Block>, Serializable {
 		// create rectangles
 		for (POI p : pois) {
 			center = (orientation == BLOCK_ORIENTATION_HORIZONTAL) ? p.getPoint().getX() : p.getPoint().getY();
+			if(rectangles.size()>100000)
+				System.err.println("sssssssssss");
 			rectangles.add(new Rectangle(center - eps / 2, true, p));
 			rectangles.add(new Rectangle(center + eps / 2, false, p));
 		}
-
 		// order rectangles
 		Collections.sort(rectangles);
 

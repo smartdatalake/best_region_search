@@ -1,6 +1,7 @@
 package matt.definitions
 
 import matt.{POI, SpatialObject}
+import org.locationtech.jts.geom.Point
 
 import scala.collection.mutable.ListBuffer
 
@@ -30,6 +31,33 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
       result += ((nodeI - 1, nodeJ))
     else if (nodeJ != 0 && cellJ % gridSizePerCell == 0)
       result += ((nodeI, nodeJ - 1))
+    result
+  }
+
+  def getNodeOptIndex(long: Double, lat: Double): Seq[(Int, Int)] = {
+    val ((cellI, cellJ), (nodeI, nodeJ)) = getPointIndex(long, lat)
+    val (cellInI, cellInJ) = getCellIndexInGrid(nodeJ * width + nodeI + 1, long, lat)
+    val result = ListBuffer[(Int, Int)]()
+    result += ((nodeI, nodeJ))
+    if (nodeI != 0 && (cellInI == 0 || cellInI == 1)) {
+      result += ((nodeI - 1, nodeJ))
+      //result += ((nodeI, nodeJ - 1))
+      //result += ((nodeI - 1, nodeJ - 1))
+    }
+    if (nodeJ != 0 && (cellInJ == 0 || cellInJ == 1))
+      result += ((nodeI, nodeJ - 1))
+    if (nodeI != width - 1 && cellInI == gridSizePerCell - 1)
+      result += ((nodeI + 1, nodeJ))
+    if (nodeJ != width - 1 && cellInJ == gridSizePerCell - 1)
+      result += ((nodeI, nodeJ + 1))
+    if ((nodeI != 0 && (cellInI == 0 || cellInI == 1)) && (nodeJ != 0 && (cellInJ == 0 || cellInJ == 1)))
+      result += ((nodeI - 1, nodeJ - 1))
+    if ((nodeI != 0 && (cellInI == 0 || cellInI == 1)) && (nodeJ != width - 1 && cellInJ == gridSizePerCell - 1))
+      result += ((nodeI - 1, nodeJ + 1))
+    if ( (nodeI != width - 1 && cellInI == gridSizePerCell - 1) && (nodeJ != width - 1 && (cellInJ == 0 || cellInJ == 1)))
+      result += ((nodeI + 1, nodeJ - 1))
+    if ((nodeI != width - 1 && cellInI == gridSizePerCell - 1) && (nodeJ != width - 1 && cellInJ == gridSizePerCell - 1))
+      result += ((nodeI + 1, nodeJ + 1))
     result
   }
 
@@ -117,23 +145,34 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
     return result
   }
 
-  def get3BorderPartition(pois: Iterable[POI]): (Seq[POI], Seq[POI], Seq[POI]) = {
+  def get3BorderPartition(node:Int,pois: Iterable[POI]): Seq[((Int,Int),Iterable[POI])] = {
     val right = new ListBuffer[POI]()
     val down = new ListBuffer[POI]()
     val corner = new ListBuffer[POI]()
+    val result=new ListBuffer[((Int,Int),Iterable[POI])]()
     for (poi <- pois) {
-      val ((cellI, cellJ), (nodeI, nodeJ)) = getPointIndex(poi.getPoint.getX(), poi.getPoint.getY())
-      if ((nodeI != 0 && (cellI % gridSizePerCell) == 0) || (nodeI != width - 1 && (cellI % gridSizePerCell) == gridSizePerCell - 1))
+      val (cellIin,cellJin)=getCellIndexInGrid(node,poi)
+      if ((cellIin==gridSizePerCell) || (cellIin==gridSizePerCell-1))
         right += (poi)
-      if ((nodeJ != 0 && cellJ % gridSizePerCell == 0) || (nodeJ != width - 1 && cellJ % gridSizePerCell == gridSizePerCell - 1))
+      if ((cellJin==gridSizePerCell) || (cellJin==gridSizePerCell-1))
         down += (poi)
-      if (((nodeI != 0 && (cellI % gridSizePerCell) == 0) || (nodeI != width - 1 && (cellI % gridSizePerCell) == gridSizePerCell - 1))
-        && ((nodeJ != 0 && cellJ % gridSizePerCell == 0) || (nodeJ != width - 1 && cellJ % gridSizePerCell == gridSizePerCell - 1)))
+      if (((cellIin==gridSizePerCell) || (cellIin==gridSizePerCell-1))
+        && ((cellJin==gridSizePerCell) || (cellJin==gridSizePerCell-1)))
         corner += (poi)
     }
-    if (right.size + down.size - corner.size != pois.size)
-      println("ss")
-    return (right, down, corner)
+  /*  for (poi <- pois.toList) {
+      val (cellI,cellJ) =getCellIndexInGrid(node, poi.getPoint.getX, poi.getPoint.getY)
+      if (cellI==gridSizePerCell||cellI==gridSizePerCell-1)
+        right(cellJ)(cellI-gridSizePerCell+1)+=1
+      if (cellJ==gridSizePerCell||cellJ==gridSizePerCell-1)
+        down(cellJ-gridSizePerCell+1)(cellI)+=1
+      if (((cellI==gridSizePerCell||cellI==gridSizePerCell-1))&&((cellJ==gridSizePerCell||cellJ==gridSizePerCell-1)))
+        corner(cellJ-gridSizePerCell+1)(cellI-gridSizePerCell+1)+=1
+    }*/
+    result+=(((node,0),right))
+    result+=(((node,1),down))
+    result+=(((node,2),corner))
+    return result
   }
 
   def IsOnBorderLeft(long: Double, lat: Double): Boolean = {
@@ -161,8 +200,6 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
     val right: Array[Array[Int]] = Array.ofDim[Int](gridSizePerCell + 1, 2)
     val down: Array[Array[Int]] = Array.ofDim[Int](2, gridSizePerCell + 1)
     val corner: Array[Array[Int]] = Array.ofDim[Int](2, 2)
-   // val longRightBorder = minmaxLong._1 + (node % width) * gridSizePerCell * cellSize
-  //  val latDownBorder = minmaxLat._2 - (((node - 1) / width.asInstanceOf[Double]).toInt + 1) * gridSizePerCell * cellSize
     for (poi <- pois.toList) {
       val (cellI,cellJ) =getCellIndexInGrid(node, poi.getPoint.getX, poi.getPoint.getY)
       if (cellI==gridSizePerCell||cellI==gridSizePerCell-1)
@@ -175,6 +212,7 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
     return (node,(down, right, corner))
   }
 
+
   def getCellIndexInGrid(node: Int, long: Double, lat: Double): (Int, Int) = {
     val nodeI = (node - 1) % width
     var nodeJ = ((node - 1) / width.asInstanceOf[Double]).toInt
@@ -184,7 +222,20 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
   def getCellIndexInGrid(node: Int,spatialObject: SpatialObject): (Int, Int) = {
     val nodeI = (node - 1) % width
     val nodeJ = ((node - 1) / width.asInstanceOf[Double]).toInt
-    val (cellI, cellJ) = getCellIndex(spatialObject.getGeometry.getCentroid.getX-(cellSize/2), spatialObject.getGeometry.getCentroid.getY+cellSize/2)
-    return ((cellI - nodeI * gridSizePerCell), cellJ - nodeJ * gridSizePerCell)
+    var a=(0,0)
+    if(spatialObject.getGeometry.isInstanceOf[Point]) {
+       a = getCellIndex(spatialObject.getGeometry.getCentroid.getX, spatialObject.getGeometry.getCentroid.getY)
+    }
+    else
+      a = getCellIndex(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
+        , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
+    return (a._1-nodeI*gridSizePerCell,a._2-nodeJ*gridSizePerCell)
   }
+
+  def getNodeIndex(node:Int):(Int,Int)={
+    val nodeI = (node - 1) % width
+    val nodeJ = ((node - 1) / width.asInstanceOf[Double]).toInt
+    return (nodeI,nodeJ)
+  }
+
 }

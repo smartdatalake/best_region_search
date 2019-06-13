@@ -1,8 +1,14 @@
 package matt.ca;
 
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
+
+import matt.ObjectSizeFetcher;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -11,7 +17,7 @@ import matt.POI;
 import matt.SpatialObject;
 import matt.score.ScoreFunction;
 public class BCAIndexProgressive extends BCAFinder<POI> {
-
+	private HashSet<String> duplicate=new HashSet<>();
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
 	public BCAIndexProgressive(boolean distinctMode) {
@@ -26,15 +32,30 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 
 	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k,
 			ScoreFunction<POI> scoreFunction,List<SpatialObject> previous) {
-		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		List<SpatialObject> topk = new ArrayList<SpatialObject>();
+		if(pois.size()==0){
+			SpatialObject t=new SpatialObject();
+			t.setScore(0);
+			topk.add(t);
+			return topk;
+		}
+	//	System.err.println("pois:"+ObjectSizeFetcher.getObjectSize(pois));
+		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
+		System.err.println("pois size:::"+pois.size());
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
+		grid=null;
 		Block block;
+		System.err.println("queue initial size:::"+queue.size());
+		System.gc ();
+		System.runFinalization ();
 		while (topk.size() < k && !queue.isEmpty()) {
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, topk,previous);
+			block=null;
 		}
+		System.err.println("queue ending size:::"+queue.size());
+		queue=null;
 		return topk;
 	}
 
@@ -96,6 +117,12 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
 		// Envelope e = block.envelope; // with tight mbr
+		/*if(duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y)) {
+			block.type=Block.EXPAND_NONE;
+			return;
+		}
+		else
+			duplicate.add(block.envelope.centre().x + ":" + block.envelope.centre().y);*/
 
 		// if this result is valid, add it to top-k
 		boolean isDistinct = true;

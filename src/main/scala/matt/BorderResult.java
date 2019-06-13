@@ -3,15 +3,33 @@ package matt;
 import java.io.Serializable;
 
 public class BorderResult implements Serializable {
-    public int nodeNum;
-    public double rightScore;
-    public double downScore;
-    public double cornerScore;
+   public int cellInI=0;
+   public int cellInJ=0;
+   public double score=0;
+    public BorderResult(int cellInI, int cellInJ, double score) {
+        this.cellInI = cellInI;
+        this.cellInJ = cellInJ;
+        this.score = score;
+    }
 
-    public BorderResult(int nodeNum, double rightScore, double downScore, double cornerScore) {
-        this.nodeNum = nodeNum;
-        this.rightScore = rightScore;
-        this.downScore = downScore;
-        this.cornerScore = cornerScore;
+    public String makeKey(){
+        return String.valueOf(cellInI)+","+String.valueOf(cellInJ);
+    }
+
+    public String getCellInI() {
+        return String.valueOf(cellInI);
+    }
+
+    public int getCellInJ() {
+        return cellInJ;
+    }
+
+    public double getScore() {
+        return score;
+    }
+
+    @Override
+    public String toString(){
+        return "("+cellInI+","+cellInJ+"):"+score;
     }
 }

@@ -1,42 +1,40 @@
-/* SimpleApp.scala */
 package matt.distrib
-import matt.ca.{BCAIndexProgressiveOneRound}
+
+import matt.ca.{BCAIndexProgressive, BCAIndexProgressiveOneRound}
 import matt.definitions.{Generic, GridIndexer}
 import matt.score.ScoreFunctionCount
-import matt.{ POI, SpatialObject}
+import matt.{BorderResult, POI, SpatialObject}
 import org.apache.spark.rdd.RDD
+
 import scala.collection.JavaConversions._
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{HashMap, ListBuffer}
 
 object OnestepAlgoOptimized {
 
-  def oneStepAlgo(input: (Int, Iterable[POI]), up: Array[Array[Int]], left: Array[Array[Int]], corner: Array[Array[Int]], eps: Double
-                  , decayConstant: Double, topk: Int, gridIndexer: GridIndexer): List[SpatialObject] = {
+  def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, gridIndexer: GridIndexer): List[SpatialObject] = {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
     val scoreFunction = new ScoreFunctionCount[POI]()
+    val (inside, border) = dividePOIs(input, gridIndexer)
+    val borderInfo = calBorderTop1(border, eps, gridIndexer).toList
+    println(input._1)
+    borderInfo.foreach(println)
     val bcaFinder = new BCAIndexProgressiveOneRound(true, gridIndexer)
-    bcaFinder.findBestCatchmentAreas(pois,input._1,up,left,corner, eps, topk,scoreFunction).asInstanceOf[List[SpatialObject]]
+    bcaFinder.findBestCatchmentAreas(inside,borderInfo,input._1, eps, topk, scoreFunction).asInstanceOf[List[SpatialObject]]
   }
 
-  def Run(nodeToPoint: RDD[(Int, POI)], borderPoint: HashMap[Int, (Array[Array[Int]], Array[Array[Int]], Array[Array[Int]])], eps: Double, decayConstant: Double, topk: Int, gridIndexer: GridIndexer) {
-    val Ans = ListBuffer[SpatialObject]()
+  def Top1BorderAlgo(input: ((Int, Int), Iterable[POI]), eps: Double): ((Int, Int), SpatialObject) = {
+    val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
+    val scoreFunction = new ScoreFunctionCount[POI]();
+    val distinct = true;
+    val bcaFinder = new BCAIndexProgressive(distinct);
+    return (input._1, bcaFinder.findBestCatchmentAreas(pois, eps, 1, scoreFunction).get(0))
+  }
 
-    val localAnswers = nodeToPoint.groupByKey().flatMap(x => {
-      var left: Array[Array[Int]] = Array.ofDim[Int](gridIndexer.gridSizePerCell + 1, 2)
-      var up: Array[Array[Int]] = Array.ofDim[Int](2, gridIndexer.gridSizePerCell + 1)
-      var corner: Array[Array[Int]] = Array.ofDim[Int](2, 2)
-      if (borderPoint.contains(x._1 - gridIndexer.width))
-        up = borderPoint.get(x._1 - gridIndexer.width).get._1
-      if (borderPoint.contains(x._1 - 1))
-        left = borderPoint.get(x._1 - 1).get._2
-      if (borderPoint.contains(x._1 - gridIndexer.width - 1))
-        corner = borderPoint.get(x._1 - gridIndexer.width - 1).get._3
-      oneStepAlgo(x, up, left, corner, eps, decayConstant, topk, gridIndexer)
-    })
-      .collect().toList.sortBy(_.getScore).reverse
-    // println("***********************************************************************************************************************************")
-    // println(localAnswers.size)
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, decayConstant: Double, topk: Int, gridIndexer: GridIndexer) {
+
+    val Ans = ListBuffer[SpatialObject]()
+    val localAnswers = nodeToPoint.groupByKey().filter(x=>x._2.toList.length>0).flatMap(x => oneStepAlgo(x, eps, topk, gridIndexer))
+      .collect.toList.sortBy(_.getScore).reverse
     var pos = 0
     while (Ans.size < topk && pos != localAnswers.size) {
       if (!Generic.intersectsList(localAnswers.get(pos), Ans))
@@ -50,9 +48,49 @@ object OnestepAlgoOptimized {
 
     val out = Ans.sortBy(_.getId).reverse
     for (x <- out) {
-      println(x.getId+"   "+x.getScore);
+      println(x.getId + "   " + x.getScore);
     }
+  }
 
+  def dividePOIs(input: (Int, Iterable[POI]), gridIndexer: GridIndexer): (ListBuffer[POI], HashMap[(Int, Int), ListBuffer[POI]]) = {
+    val pois = ListBuffer(input._2.toList: _*)
+    val inside = new ListBuffer[POI]
+    val border = new HashMap[(Int, Int), ListBuffer[POI]]
+    for (poi <- pois) {
+      val (cellInI, cellInJ) = gridIndexer.getCellIndexInGrid(input._1, poi.getPoint.getX, poi.getPoint.getY)
+      if ((cellInI == -1 || cellInJ == -1 || cellInI == gridIndexer.gridSizePerCell + 1 || cellInJ == gridIndexer.gridSizePerCell + 1)) {
+        val t = border.get((cellInI, cellInJ)).getOrElse(new ListBuffer[POI])
+        t.+=(poi)
+        border.+=(((cellInI, cellInJ), t))
+      }
+      else if ((cellInI == 0 || cellInJ == 0 || cellInI == gridIndexer.gridSizePerCell || cellInJ == gridIndexer.gridSizePerCell)) {
+        inside += poi
+        val t = border.get((cellInI, cellInJ)).getOrElse(new ListBuffer[POI])
+        t.+=(poi)
+        border.+=(((cellInI, cellInJ), t))
+      }
+      else if ((cellInI > 0 || cellInJ > 0 || cellInI < gridIndexer.gridSizePerCell || cellInJ < gridIndexer.gridSizePerCell)) {
+        inside += poi
+      }
+    }
+    return (inside, border)
+  }
+
+  def calBorderTop1(poisInCell: HashMap[(Int, Int), ListBuffer[POI]], eps: Double, gridIndexer: GridIndexer): ListBuffer[BorderResult] = {
+    val scoreFunction = new ScoreFunctionCount[POI]();
+    val bcaFinder = new BCAIndexProgressive(true);
+    val output = new ListBuffer[BorderResult]
+    for (((cellInI, cellInJ), pois) <- poisInCell) {
+      if (cellInI == -1 || cellInI == gridIndexer.gridSizePerCell || cellInJ == -1 || cellInI == gridIndexer.gridSizePerCell) {
+        val quadCellPois = new ListBuffer[POI]
+        quadCellPois.addAll(poisInCell.get((cellInI, cellInJ)).getOrElse(new ListBuffer[POI]))
+        quadCellPois.addAll(poisInCell.get((cellInI + 1, cellInJ)).getOrElse(new ListBuffer[POI]))
+        quadCellPois.addAll(poisInCell.get((cellInI + 1, cellInJ + 1)).getOrElse(new ListBuffer[POI]))
+        quadCellPois.addAll(poisInCell.get((cellInI, cellInJ + 1)).getOrElse(new ListBuffer[POI]))
+        output.add(new BorderResult(cellInI, cellInJ, bcaFinder.findBestCatchmentAreas(quadCellPois, eps, 1, scoreFunction).get(0).getScore))
+      }
+    }
+    return output
   }
 }
 
@@ -73,6 +111,18 @@ object OnestepAlgoOptimized {
       new BorderResult(x._1, rightBestScore, downBestScore, cornerBestScore)
     }).collect()*/
 // t.foreach(println)
-
+/*val localAnswers = nodeToPoint.groupByKey().flatMap(x => {
+      var left: Array[Array[Int]] = Array.ofDim[Int](gridIndexer.gridSizePerCell + 1, 2)
+      var up: Array[Array[Int]] = Array.ofDim[Int](2, gridIndexer.gridSizePerCell + 1)
+      var corner: Array[Array[Int]] = Array.ofDim[Int](2, 2)
+      if (borderPoint.contains(x._1 - gridIndexer.width))
+        up = borderPoint.get(x._1 - gridIndexer.width).get._1
+      if (borderPoint.contains(x._1 - 1))
+        left = borderPoint.get(x._1 - 1).get._2
+      if (borderPoint.contains(x._1 - gridIndexer.width - 1))
+        corner = borderPoint.get(x._1 - gridIndexer.width - 1).get._3
+      oneStepAlgo(x, up, left, corner, eps, decayConstant, topk, gridIndexer)
+    })
+      .collect().toList.sortBy(_.getScore).reverse*/
 //Second Sub-iteration
 ////////////////////////////////

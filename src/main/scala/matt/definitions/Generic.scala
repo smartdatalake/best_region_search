@@ -34,7 +34,7 @@ object Generic {
 
   def intersects(point1: SpatialObject, point2: SpatialObject): Boolean = {
     if(point2==null) return false
-    if(point2==null) return false
+    if(point1==null) return false
     point1.getGeometry().intersects(point2.getGeometry())
   }
 
@@ -45,7 +45,12 @@ object Generic {
         return true
     return false
   }
-
+  def poiOptToKeyValue(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer): Seq[(Int, POI)] = {
+    val keywords = row.getAs[String]("keywords").split(",").toList;
+    return gridIndexer.getNodeOptIndex(row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"))
+      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id"), row.getAs[String]("name")
+        , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), keywords, 0, geometryFactory)))
+  }
 
 
 }
