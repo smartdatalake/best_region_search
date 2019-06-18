@@ -5,11 +5,11 @@ import matt.POI;
 import java.io.Serializable;
 
 public class Rectangle implements Comparable<Rectangle>, Serializable {
-	public double idx;
+	public float idx;
 	public boolean isMin;
 	public POI p;
 
-	public Rectangle(double idx, boolean isMin, POI p) {
+	public Rectangle(float idx, boolean isMin, POI p) {
 		this.idx = idx;
 		this.isMin = isMin;
 		this.p = p;

@@ -39,23 +39,27 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			topk.add(t);
 			return topk;
 		}
-	//	System.err.println("pois:"+ObjectSizeFetcher.getObjectSize(pois));
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
-		System.err.println("pois size:::"+pois.size());
+	//	System.err.println("pois size:::"+pois.size());
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
 		grid=null;
 		Block block;
-		System.err.println("queue initial size:::"+queue.size());
+	//	System.err.println("queue initial size:::"+queue.size());
 		System.gc ();
-		System.runFinalization ();
+	//	System.runFinalization ();
 		while (topk.size() < k && !queue.isEmpty()) {
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, topk,previous);
 			block=null;
 		}
-		System.err.println("queue ending size:::"+queue.size());
+	//	System.err.println("queue ending size:::"+queue.size());
 		queue=null;
+		if(topk.size()==0){
+			SpatialObject t=new SpatialObject();
+			t.setScore(0);
+			topk.add(t);
+		}
 		return topk;
 	}
 
@@ -66,7 +70,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		List<POI> cellPois;
 		Block block;
 		Envelope cellBoundary;
-
+		//System.err.println("Hi I am in initQueue");
 		/* Iterate over the cells and compute an upper bound for each cell. */
 		for (Integer row : grid.getCells().keySet()) {
 			for (Integer column : grid.getCells().get(row).keySet()) {
@@ -117,12 +121,12 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
 		// Envelope e = block.envelope; // with tight mbr
-		/*if(duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y)) {
+		if(duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y+":"+block.type)) {
 			block.type=Block.EXPAND_NONE;
 			return;
 		}
 		else
-			duplicate.add(block.envelope.centre().x + ":" + block.envelope.centre().y);*/
+			duplicate.add(block.envelope.centre().x + ":" + block.envelope.centre().y+":"+block.type);
 
 		// if this result is valid, add it to top-k
 		boolean isDistinct = true;

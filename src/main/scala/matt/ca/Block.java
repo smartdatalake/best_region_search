@@ -69,19 +69,16 @@ public class Block implements Comparable<Block>, Serializable {
 	private List<Rectangle> computeOrderedRectangles(int orientation, double eps) {
 
 		double center;
-		List<Rectangle> rectangles = new ArrayList<Rectangle>();
+		ArrayList<Rectangle> rectangles = new ArrayList<Rectangle>();
 
-		// create rectangles
-		for (POI p : pois) {
-			center = (orientation == BLOCK_ORIENTATION_HORIZONTAL) ? p.getPoint().getX() : p.getPoint().getY();
-			if(rectangles.size()>100000)
-				System.err.println("sssssssssss");
-			rectangles.add(new Rectangle(center - eps / 2, true, p));
-			rectangles.add(new Rectangle(center + eps / 2, false, p));
-		}
-		// order rectangles
-		Collections.sort(rectangles);
-
+			for (POI p : pois) {
+				center = (orientation == BLOCK_ORIENTATION_HORIZONTAL) ? (float) p.getPoint().getX() : (float) p.getPoint().getY();
+				rectangles.add(new Rectangle((float) (center - eps / 2), true, p));
+				rectangles.add(new Rectangle((float)(center + eps / 2), false, p));
+			}
+			// order rectangles
+			Collections.sort(rectangles);
+			rectangles.trimToSize();
 		return rectangles;
 	}
 

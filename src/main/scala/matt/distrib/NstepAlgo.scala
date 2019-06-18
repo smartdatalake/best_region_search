@@ -23,19 +23,19 @@ object NstepAlgo {
   def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int) {
     var Ans = List[SpatialObject]();
     var iteration = 0;
-    val Kprime = 50;
+    val Kprime = K;
 
     while (Ans.length < K) {
       println("Current Iteration: " + iteration);
       // calculate the local results at each node.
-      val resultRegionOfRound = nodeToPoint.groupByKey().flatMap(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans));
-      val localAnswers = resultRegionOfRound.collect().toList.sortBy(_.getScore).reverse
+      val resultRegionOfRound = nodeToPoint.groupByKey().map(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans)).reduce((a,b)=>localAnsReducer(a,b,Kprime));
+      val localAnswers = resultRegionOfRound.sortBy(_.getScore).reverse
       var roundAnswers = ListBuffer[SpatialObject]()
       /////take Kprime acceptable regions from current round answers as "roundAnswers"
       ////////////////////////////////
       var pos = 0
       breakable {
-        while (pos < Math.min(Kprime, K - Ans.size)) {
+        while (pos < Math.min(Kprime, K - Ans.size)&&pos<localAnswers.size) {
           if (Generic.intersectsList(localAnswers.get(pos), roundAnswers)) {
             break;
           } else {
@@ -54,10 +54,30 @@ object NstepAlgo {
     println("\n\n\n");
     println("Final Result in " + iteration + " iteration");
     println("\n\n\n");
-    val out=Ans.sortBy(_.getId).reverse
+    val out=Ans.sortBy(_.getScore).reverse
     for (x <- out) {
       println(x.getId+"     "+x.getScore);
     }
 
+  }
+  def localAnsReducer(a:List[SpatialObject],b:List[SpatialObject],Kprime:Int):List[SpatialObject]={
+    var temp1=new ListBuffer[SpatialObject]()
+    temp1.addAll(a.toList)
+    temp1.addAll(b.toList)
+    temp1=temp1.sortBy(_.getScore).reverse
+    var pos=0
+    val roundAnswers=new ListBuffer[SpatialObject]()
+    breakable {
+      while (pos < Kprime&&pos<temp1.size) {
+        if (Generic.intersectsList(temp1.get(pos), roundAnswers)) {
+          break;
+        } else {
+          val temp = temp1.get(pos);
+          roundAnswers += temp;
+        }
+        pos += 1
+      }
+    }
+    return roundAnswers.toList
   }
 }

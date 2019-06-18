@@ -238,4 +238,8 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
     return (nodeI,nodeJ)
   }
 
+  def getLonLat(node:Int):(Double,Double)={
+    val (nodeI,nodeJ)=getNodeIndex(node)
+    return (minmaxLong._1 + nodeI*gridSizePerCell*cellSize , minmaxLat._2-nodeJ*gridSizePerCell*cellSize)
+  }
 }
