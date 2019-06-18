@@ -51,9 +51,9 @@ object NstepAlgo {
       iteration = iteration + 1;
     }
 
-    println("\n\n\n");
+    println("\n");
     println("Final Result in " + iteration + " iteration");
-    println("\n\n\n");
+    println("\n");
     val out=Ans.sortBy(_.getScore).reverse
     for (x <- out) {
       println(x.getId+"     "+x.getScore);

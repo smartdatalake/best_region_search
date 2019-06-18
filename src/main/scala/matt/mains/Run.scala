@@ -80,6 +80,8 @@ object Run {
    val t = System.nanoTime()
    matt.distrib.NstepAlgo.Run(nodeToPoint, eps, topk);
    println("Nstep:::       time:" + (System.nanoTime() - t) + "          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
+   println("-----------------------------------------------------------------------------------------------------------------------------")
+   println("-----------------------------------------------------------------------------------------------------------------------------")
   }
 
   /* if (Nstep2) {
@@ -90,12 +92,16 @@ object Run {
    val t = System.nanoTime()
    matt.distrib.OnestepAlgo.Run(nodeToPoint, eps, topk, gridIndexer);
    println("Single:::       time:" + (System.nanoTime() - t) + "          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
+   println("-----------------------------------------------------------------------------------------------------------------------------")
+   println("-----------------------------------------------------------------------------------------------------------------------------")
   }
   if (OneStepOptimized) {
    val t = System.nanoTime()
    val nodeOptToPoint = inputData.rdd.flatMap(x => Generic.poiOptToKeyValue(x, geometryFactory, gridIndexer));
    matt.distrib.OnestepAlgoOptimized.Run(nodeOptToPoint, eps, decayConstant, topk, gridIndexer)
    println("SingleOpt:::       time:" + (System.nanoTime() - t) + "          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
+   println("-----------------------------------------------------------------------------------------------------------------------------")
+   println("-----------------------------------------------------------------------------------------------------------------------------")
   }
   spark.stop()
  };

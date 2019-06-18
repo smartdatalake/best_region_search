@@ -40,9 +40,9 @@ object OnestepAlgoOptimized {
     this.topK=topk
     val localAnswers = nodeToPoint.groupByKey().filter(x=>x._2.toList.length>0).map(x => oneStepAlgo(x, eps, topk, gridIndexer)).reduce(localAnsReducer)
 
-    println("\n\n\n");
+    println("\n");
     println("Final Result");
-    println("\n\n\n");
+    println("\n");
 
     localAnswers.sortBy(_.getScore).reverse.foreach(x => println(x.getId + ":::::::" + x.getScore))
   }
