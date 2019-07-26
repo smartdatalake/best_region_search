@@ -32,6 +32,27 @@ object Generic {
         , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), keywords, 0, geometryFactory)))
   }
 
+  def poiToKeyValueShifting(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer,shift:Double): Seq[(Int, POI)] = {
+    val keywords = row.getAs[String]("keywords").split(",").toList;
+    val result=new ListBuffer[(Int,POI)]()
+    result.addAll(gridIndexer.getNodeIndex(row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"))
+      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id"), row.getAs[String]("name")
+        , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), keywords, 0, geometryFactory))))
+
+    result.addAll(gridIndexer.getNodeIndex(row.getAs[Double]("longtitude")+shift, row.getAs[Double]("latitude"))
+      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id"), row.getAs[String]("name")
+        , row.getAs[Double]("longtitude")+shift, row.getAs[Double]("latitude"), keywords, 0, geometryFactory))))
+
+    result.addAll(gridIndexer.getNodeIndex(row.getAs[Double]("longtitude"), row.getAs[Double]("latitude")+shift)
+      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id"), row.getAs[String]("name")
+        , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude")+shift, keywords, 0, geometryFactory))))
+
+    result.addAll(gridIndexer.getNodeIndex(row.getAs[Double]("longtitude")+shift, row.getAs[Double]("latitude")+shift)
+      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id"), row.getAs[String]("name")
+        , row.getAs[Double]("longtitude")+shift, row.getAs[Double]("latitude")+shift, keywords, 0, geometryFactory))))
+    return result.toList
+  }
+
   def intersects(point1: SpatialObject, point2: SpatialObject): Boolean = {
     if(point2==null) return false
     if(point1==null) return false

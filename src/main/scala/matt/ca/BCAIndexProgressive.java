@@ -1,14 +1,9 @@
 package matt.ca;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
-
-import matt.ObjectSizeFetcher;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -16,7 +11,9 @@ import matt.Grid;
 import matt.POI;
 import matt.SpatialObject;
 import matt.score.ScoreFunction;
+
 public class BCAIndexProgressive extends BCAFinder<POI> {
+
 	private HashSet<String> duplicate=new HashSet<>();
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
@@ -40,20 +37,15 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			return topk;
 		}
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
-	//	System.err.println("pois size:::"+pois.size());
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
 		grid=null;
 		Block block;
-	//	System.err.println("queue initial size:::"+queue.size());
-		System.gc ();
-	//	System.runFinalization ();
 		while (topk.size() < k && !queue.isEmpty()) {
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, topk,previous);
 			block=null;
 		}
-	//	System.err.println("queue ending size:::"+queue.size());
 		queue=null;
 		if(topk.size()==0){
 			SpatialObject t=new SpatialObject();
@@ -70,7 +62,6 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		List<POI> cellPois;
 		Block block;
 		Envelope cellBoundary;
-		//System.err.println("Hi I am in initQueue");
 		/* Iterate over the cells and compute an upper bound for each cell. */
 		for (Integer row : grid.getCells().keySet()) {
 			for (Integer column : grid.getCells().get(row).keySet()) {
@@ -105,8 +96,10 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		if (block.type == Block.BLOCK_TYPE_REGION) {
 			inspectResult(block, eps, topk,previous);
 		} else {
-			List<Block> newBlocks = block.sweep();
-			queue.addAll(newBlocks);
+			if(block!=null) {
+				List<Block> newBlocks = block.sweep();
+				queue.addAll(newBlocks);
+			}
 		}
 		if ((block.type == Block.BLOCK_TYPE_SLAB || block.type == Block.BLOCK_TYPE_REGION) && block.pois.size() > 1) {
 			Block[] derivedBlocks = block.getSubBlocks();
@@ -121,6 +114,12 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
 		// Envelope e = block.envelope; // with tight mbr
+		if(block==null)
+			return;
+		if(block.envelope==null)
+			return;
+		if(block.envelope.centre()==null)
+			return;
 		if(duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y+":"+block.type)) {
 			block.type=Block.EXPAND_NONE;
 			return;

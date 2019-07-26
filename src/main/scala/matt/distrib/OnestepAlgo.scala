@@ -28,18 +28,43 @@ object OnestepAlgo {
   def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer) {
     this.topK = topk
 
-    val localAnswers = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer)).reduce(localAnsReducer)
+    val Ans = ListBuffer[SpatialObject]()
+    val localAnswers = nodeToPoint.groupByKey().flatMap(x => oneStepAlgo(x, eps, topk, gridIndexer))
+      .collect().toList.sortBy(_.getScore).reverse
+     println("***********************************************************************************************************************************")
+     println(localAnswers.size)
+    var pos = 0
+    while (Ans.size < topk && pos != localAnswers.size) {
+      if (!Generic.intersectsList(localAnswers.get(pos), Ans))
+        Ans.add(localAnswers.get(pos))
+      pos += 1
+    }
 
     println("\n");
     println("Final Result");
     println("\n");
 
-    localAnswers.sortBy(_.getScore).reverse.foreach(x => println(x.getId + ":::::::" + x.getScore))
+//    Ans.sortBy(_.getScore).reverse.foreach(x => println(x.getId + ":::::::" + x.getScore))
 
   }
 
   def localAnsReducer(a: List[SpatialObject], b: List[SpatialObject]): List[SpatialObject] = {
     var temp1 = new ListBuffer[SpatialObject]()
+    temp1.addAll(a.toList)
+    temp1.addAll(b.toList)
+    temp1 = temp1.sortBy(_.getScore).reverse
+    var pos = 0
+    val roundAnswers = new ListBuffer[SpatialObject]()
+    while (roundAnswers.size < topK && pos < temp1.size) {
+      if (!Generic.intersectsList(temp1.get(pos), roundAnswers)) {
+        val temp = temp1.get(pos);
+        roundAnswers += temp;
+      }
+      pos += 1
+    }
+    return roundAnswers.toList
+  }
+ /*   var temp1 = new ListBuffer[SpatialObject]()
     temp1.addAll(a.toList)
     temp1.addAll(b.toList)
     temp1 = temp1.sortBy(_.getScore).reverse
@@ -55,5 +80,5 @@ object OnestepAlgo {
       }
     }
     return reduceAnswer.toList
-  }
+  }*/
 }
