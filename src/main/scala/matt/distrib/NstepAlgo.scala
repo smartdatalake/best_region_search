@@ -17,6 +17,8 @@ object NstepAlgo {
     val scoreFunction = new ScoreFunctionCount[POI]();
     val distinct = true;
     val bcaFinder = new BCAIndexProgressive(distinct);
+    val t=System.nanoTime();
+
     return bcaFinder.findBestCatchmentAreas(input.toList, eps, topk, scoreFunction, finalAnswers).toList;
   }
 

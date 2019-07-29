@@ -70,15 +70,21 @@ public class Block implements Comparable<Block>, Serializable {
 
 		double center;
 		ArrayList<Rectangle> rectangles = new ArrayList<Rectangle>();
-
+		try {
 			for (POI p : pois) {
 				center = (orientation == BLOCK_ORIENTATION_HORIZONTAL) ? (float) p.getPoint().getX() : (float) p.getPoint().getY();
 				rectangles.add(new Rectangle((float) (center - eps / 2), true, p));
-				rectangles.add(new Rectangle((float)(center + eps / 2), false, p));
+				rectangles.add(new Rectangle((float) (center + eps / 2), false, p));
 			}
 			// order rectangles
 			Collections.sort(rectangles);
 			rectangles.trimToSize();
+		} catch (OutOfMemoryError e) {
+			System.err.println("inside block");
+			System.err.println(this.envelope.centre().getX()+":"+this.envelope.centre().getY());
+			System.err.println(rectangles.size());
+			System.err.println(this.pois.size());
+		}
 		return rectangles;
 	}
 

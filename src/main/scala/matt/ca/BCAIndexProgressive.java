@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.concurrent.TimeUnit;
+
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -29,6 +31,9 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 
 	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k,
 			ScoreFunction<POI> scoreFunction,List<SpatialObject> previous) {
+		long time=System.nanoTime();
+		if(pois.size()>10000)
+			System.err.print("poi# in a partition "+pois.size()+" on location around   "+ pois.get(0).getPoint().getX()+":"+pois.get(0).getPoint().getY());
 		List<SpatialObject> topk = new ArrayList<SpatialObject>();
 		if(pois.size()==0){
 			SpatialObject t=new SpatialObject();
@@ -52,6 +57,8 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			t.setScore(0);
 			topk.add(t);
 		}
+		if(pois.size()>10000)
+		System.err.println(" time"+ TimeUnit.NANOSECONDS.toMillis((System.nanoTime()-time)));
 		return topk;
 	}
 
@@ -93,19 +100,32 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 
 	private void processBlock(Block block, double eps, ScoreFunction<POI> scoreFunction, PriorityQueue<Block> queue,
 			List<SpatialObject> topk,List<SpatialObject> previous) {
-		if (block.type == Block.BLOCK_TYPE_REGION) {
-			inspectResult(block, eps, topk,previous);
-		} else {
-			if(block!=null) {
-				List<Block> newBlocks = block.sweep();
-				queue.addAll(newBlocks);
+		try {
+			if (block.type == Block.BLOCK_TYPE_REGION) {
+				inspectResult(block, eps, topk, previous);
+			} else {
+				if (block != null) {
+
+					List<Block> newBlocks = block.sweep();
+					queue.addAll(newBlocks);
+
+				}
 			}
-		}
-		if ((block.type == Block.BLOCK_TYPE_SLAB || block.type == Block.BLOCK_TYPE_REGION) && block.pois.size() > 1) {
-			Block[] derivedBlocks = block.getSubBlocks();
-			for (int i = 0; i < derivedBlocks.length; i++) {
-				queue.add(derivedBlocks[i]);
+			if ((block.type == Block.BLOCK_TYPE_SLAB || block.type == Block.BLOCK_TYPE_REGION) && block.pois.size() > 1) {
+				Block[] derivedBlocks = block.getSubBlocks();
+				for (int i = 0; i < derivedBlocks.length; i++) {
+					queue.add(derivedBlocks[i]);
+				}
 			}
+		} catch (OutOfMemoryError e) {
+			System.err.println("current block location:   " + block.envelope.centre().getX() + ":" + block.envelope.centre().getY());
+			System.err.println("current block size:   " + block.pois.size());
+			System.err.println("queue size:   " + queue.size());
+			int recCNT = 0;
+			for (Block b : queue)
+				recCNT += b.orderedRectangles.size();
+			System.err.println("recCNT:   " + recCNT);
+
 		}
 	}
 

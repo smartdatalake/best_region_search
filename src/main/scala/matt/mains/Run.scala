@@ -53,7 +53,8 @@ object Run {
    //////Read and split CSV coordination to (nodeNumber, POI) (assign poi to each worker)
    ///////////////////////////////////////////////////////////////
 
-   val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load("hdfs:///input2.csv").drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null)).filter(x => (x.getAs[Double]("longtitude") > 10 && x.getAs[Double]("longtitude") < 46)).filter(x => (x.getAs[Double]("latitude") > 35 && x.getAs[Double]("latitude") < 80))//.filter(x => (x.getAs[Double]("longtitude") > 9.47996951665 && x.getAs[Double]("longtitude") < 16.9796667823)).filter(x => (x.getAs[Double]("latitude") > 46.4318173285 && x.getAs[Double]("latitude") < 49.0390742051)) //.filter(x => (x.getAs[Double]("longtitude")> -0.489 && x.getAs[Double]("longtitude")< 0.236)).filter(x => (x.getAs[Double]("latitude")> 51.28 && x.getAs[Double]("latitude")< 51.686));//;
+   val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load("hdfs:///input2.csv").drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null))
+     .filter(x => (x.getAs[Double]("longtitude") > 9 && x.getAs[Double]("longtitude") < 22)).filter(x => (x.getAs[Double]("latitude") > 35 && x.getAs[Double]("latitude") < 56))//.filter(x => (x.getAs[Double]("longtitude") > 10 && x.getAs[Double]("longtitude") < 46)).filter(x => (x.getAs[Double]("latitude") > 35 && x.getAs[Double]("latitude") < 80))////.filter(x => (x.getAs[Double]("longtitude")> -0.489 && x.getAs[Double]("longtitude")< 0.236)).filter(x => (x.getAs[Double]("latitude")> 51.28 && x.getAs[Double]("latitude")< 51.686));//;
    // val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load("hdfs:///input2.csv").drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null)).filter(x => (x.getAs[Double]("longtitude")> 3 && x.getAs[Double]("longtitude")< 12)).filter(x => (x.getAs[Double]("latitude")> 44 && x.getAs[Double]("latitude")< 53));
    //var inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load(poiInputFile).drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null))//.filter(x => (x.getAs[Double]("longtitude") > -0.489 && x.getAs[Double]("longtitude") < 0.236)).filter(x => (x.getAs[Double]("latitude") > 51.28 && x.getAs[Double]("latitude") < 51.686));
 
@@ -69,7 +70,7 @@ object Run {
  //  println("All POI Size:" + inputData.collect().size)
 
    // find to which node does each point belongs to : (NodeNo,Row)
-  for (eps<-Set(0.0001,0.0005,0.001,0.002)) {
+  for (eps<-Set(0.001,0.002)) {
    val dataSize = math.max((minmaxLat._2 - minmaxLat._1), (minmaxLong._2 - minmaxLong._1))
    val cellSize = eps.asInstanceOf[Double]
    val p = cellSize / dataSize.asInstanceOf[Double]
