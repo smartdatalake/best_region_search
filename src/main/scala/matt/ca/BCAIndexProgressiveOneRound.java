@@ -153,8 +153,8 @@ public class BCAIndexProgressiveOneRound {
 			else
 				inspectResult(block, eps, dependencyGraph);
 		} else {
-			List<Block> newBlocks = block.sweep();
-			queue.addAll(newBlocks);
+		//	List<Block> newBlocks = block.sweep();
+		//	queue.addAll(newBlocks);
 		}
 
 		// insert the two derived sub-blocks in the queue

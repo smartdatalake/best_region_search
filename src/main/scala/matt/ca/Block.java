@@ -1,9 +1,7 @@
 package matt.ca;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -11,6 +9,8 @@ import org.locationtech.jts.geom.Point;
 
 import matt.POI;
 import matt.score.ScoreFunction;
+
+import javax.swing.text.html.HTMLDocument;
 
 public class Block implements Comparable<Block>, Serializable {
 
@@ -36,7 +36,6 @@ public class Block implements Comparable<Block>, Serializable {
 	public double eps;
 	public int precedingResults;
 	public int expandLeft, expandRight;
-
 	private GeometryFactory geometryFactory;
 
 	public Block(List<POI> pois, ScoreFunction<POI> scoreFunction, int type, int orientation, int expansion, double eps,
@@ -124,10 +123,29 @@ public class Block implements Comparable<Block>, Serializable {
 
 		return derivedBlocks;
 	}
-
-	public List<Block> sweep() {
-		List<Block> blocks = new ArrayList<Block>();
-
+	public double sweep(PriorityQueue queue,double maxDeleted) {
+		//List<Block> blocks = new ArrayList<Block>();
+		double deletedBlockMaxScore=0;
+		if(queue.size()>50000) {
+			System.err.println("I am going to prune");
+			Iterator it = queue.iterator();
+			int counter = 0;
+			int pruned=0;
+			while (it.hasNext()) {
+				Block item=((Block)it.next());
+				if (counter > 40000) {
+					if(item.relevanceScore>maxDeleted)
+						maxDeleted=item.relevanceScore;
+					it.remove();
+					if(item.relevanceScore>deletedBlockMaxScore)
+						deletedBlockMaxScore=item.relevanceScore;
+					pruned++;
+				}
+				else
+					counter++;
+			}
+			System.err.println("I pruned "+pruned+" but we lost "+deletedBlockMaxScore);
+		}
 		List<POI> pois = new ArrayList<POI>();
 		boolean isMin = true;
 		int expandLeft = 0, expandRight = 0;
@@ -138,7 +156,7 @@ public class Block implements Comparable<Block>, Serializable {
 				if (!isMin) {
 					block.expandRight = expandRight;
 					expandRight = 0;
-					blocks.add(block);
+					queue.add(block);
 				}
 				pois.add(r.p);
 				expandLeft++;
@@ -159,9 +177,9 @@ public class Block implements Comparable<Block>, Serializable {
 		// at the end of the sweep, add the last pending block
 		block.expandRight = expandRight;
 		expandRight = 0;
-		blocks.add(block);
+		queue.add(block);
+		return maxDeleted;
 
-		return blocks;
 	}
 
 	public List<Block> sweepExhaustive() {
