@@ -43,7 +43,7 @@ object Run {
   val poiInputFile3 = "/home/hamid/input.csv";
 
   var eps = 0.0001
-  val topk = 300
+  val topk = 1
   val decayConstant = 0.7
 
 
