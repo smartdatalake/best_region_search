@@ -32,6 +32,7 @@ object Generic {
         , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), keywords, 0, geometryFactory)))
   }
 
+
   def poiToKeyValueShifting(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer,shift:Double): Seq[(Int, POI)] = {
     val keywords = row.getAs[String]("keywords").split(",").toList;
     val result=new ListBuffer[(Int,POI)]()

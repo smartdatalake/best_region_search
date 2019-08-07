@@ -1,14 +1,17 @@
 /* SimpleApp.scala */
 package matt.distrib
 
+import java.util
+
 import org.apache.spark.rdd.RDD
+
 import scala.util.control.Breaks._
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
-import matt.POI;
-import matt.SpatialObject;
-import matt.ca.BCAIndexProgressive;
-import matt.score.ScoreFunctionCount;
+import matt.POI
+import matt.SpatialObject
+import matt.ca.BCAIndexProgressive
+import matt.score.ScoreFunctionCount
 import matt.definitions.Generic
 
 object NstepAlgo {
@@ -22,6 +25,61 @@ object NstepAlgo {
     return bcaFinder.findBestCatchmentAreas(input.toList, eps, topk, scoreFunction, finalAnswers).toList;
   }
 
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int) {
+    var Ans = List[SpatialObject]();
+    var iteration = 0;
+    val Kprime = K;
+
+    while (Ans.length < K) {
+      println("Current Iteration: " + iteration);
+      // calculate the local results at each node.
+      val resultRegionOfRound = nodeToPoint.groupByKey().map(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans)).reduce((a,b)=>localAnsReducer(a,b,Kprime)).sortBy(_.getScore).reverse;
+      /////take Kprime acceptable regions from current round answers as "roundAnswers"
+      ////////////////////////////////
+      ///////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////
+      System.err.println(resultRegionOfRound)
+      Ans = Ans.++(resultRegionOfRound);
+      iteration = iteration + 1;
+    }
+
+    // println("\n");
+    // println("Final Result in " + iteration + " iteration");
+    // println("\n");
+    val out=Ans.sortBy(_.getScore).reverse
+    for (x <- out) {
+      println(x.getId+"     "+x.getScore);
+    }
+
+  }
+  def localAnsReducer(a:List[SpatialObject],b:List[SpatialObject],Kprime:Int):List[SpatialObject]={
+    var merged=new ListBuffer[SpatialObject]()
+    var minA=0.0
+    if(a.size!=0) minA = a.get(0).getScore
+    var minB=0.0
+    if(b.size!=0) minB = b.get(0).getScore
+    a.foreach(x=>if (x.getScore < minA) minA=x.getScore)
+    b.foreach(x=>if (x.getScore < minB) minB=x.getScore)
+    merged.addAll(a.toList)
+    merged.addAll(b.toList)
+    merged=merged.sortBy(_.getScore).reverse
+    var pos=0
+    val roundAnswers=new ListBuffer[SpatialObject]()
+    breakable {
+      while (pos < Kprime&&pos<merged.size) {
+        if ((merged.get(pos).getScore<minA || merged.get(pos).getScore<minB) ||  Generic.intersectsList(merged.get(pos), roundAnswers)) {
+          break;
+        } else {
+          val temp = merged.get(pos);
+          roundAnswers += temp;
+        }
+        pos += 1
+      }
+    }
+    return roundAnswers.toList
+  }
+}
+/*
   def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int) {
     var Ans = List[SpatialObject]();
     var iteration = 0;
@@ -53,13 +111,13 @@ object NstepAlgo {
       iteration = iteration + 1;
     }
 
-    println("\n");
-    println("Final Result in " + iteration + " iteration");
-    println("\n");
-  //  val out=Ans.sortBy(_.getScore).reverse
-   // for (x <- out) {
+   // println("\n");
+   // println("Final Result in " + iteration + " iteration");
+   // println("\n");
+    //val out=Ans.sortBy(_.getScore).reverse
+    //for (x <- out) {
     //  println(x.getId+"     "+x.getScore);
-   // }
+    //}
 
   }
   def localAnsReducer(a:List[SpatialObject],b:List[SpatialObject],Kprime:Int):List[SpatialObject]={
@@ -81,5 +139,4 @@ object NstepAlgo {
       }
     }
     return roundAnswers.toList
-  }
-}
+  }*/

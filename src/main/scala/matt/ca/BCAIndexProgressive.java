@@ -1,9 +1,7 @@
 package matt.ca;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.PriorityQueue;
+import java.text.DecimalFormat;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.locationtech.jts.geom.Envelope;
@@ -16,9 +14,10 @@ import matt.score.ScoreFunction;
 
 public class BCAIndexProgressive extends BCAFinder<POI> {
 
-	private HashSet<String> duplicate=new HashSet<>();
+	private HashSet<String> duplicate = new HashSet<>();
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
+
 	public BCAIndexProgressive(boolean distinctMode) {
 		super();
 		this.distinctMode = distinctMode;
@@ -30,13 +29,34 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 	}
 
 	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k,
-			ScoreFunction<POI> scoreFunction,List<SpatialObject> previous) {
-		long time=System.nanoTime();
-		if(pois.size()>10000)
-			System.err.print("poi# in a partition "+pois.size()+" on location around   "+ pois.get(0).getPoint().getX()+":"+pois.get(0).getPoint().getY());
+													  ScoreFunction<POI> scoreFunction, List<SpatialObject> previous) {
+		long time = System.nanoTime();
+		boolean timed=false;
+		if (pois.size() > 5000) {
+			System.err.println("poi# in a partition " + pois.size() + " on location around   " + pois.get(0).getPoint().getX() + ":" + pois.get(0).getPoint().getY());
+			timed = true;
+		}
+		if (pois.size() > 5000) {
+			HashMap<String, POI> temp = new HashMap<>();
+			for (POI poi : pois) {
+				double x = myRound(poi.getPoint().getX(),1000);
+				double y =  myRound(poi.getPoint().getY(),1000);
+				if (temp.containsValue(x + ":" + y)) {
+					temp.get(x + ":" + y).increaseScore();
+				}
+				else
+					temp.put(x + ":" + y,poi);
+			}
+	//		System.err.println("before "+ pois.size());
+	//		System.err.println(temp.size());
+			pois=new ArrayList<>();
+			pois.addAll(temp.values());
+	//		System.err.println("after "+pois.size());
+		}
+	//	System.err.println("Now start with pois# "+ pois.size());
 		List<SpatialObject> topk = new ArrayList<SpatialObject>();
-		if(pois.size()==0){
-			SpatialObject t=new SpatialObject();
+		if (pois.size() == 0) {
+			SpatialObject t = new SpatialObject();
 			t.setScore(0);
 			topk.add(t);
 			return topk;
@@ -44,21 +64,21 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
-		grid=null;
+		grid = null;
 		Block block;
 		while (topk.size() < k && !queue.isEmpty()) {
 			block = queue.poll();
-			processBlock(block, eps, scoreFunction, queue, topk,previous);
-			block=null;
+			processBlock(block, eps, scoreFunction, queue, topk, previous);
+			block = null;
 		}
-		queue=null;
-		if(topk.size()==0){
-			SpatialObject t=new SpatialObject();
+		queue = null;
+		if (topk.size() == 0) {
+			SpatialObject t = new SpatialObject();
 			t.setScore(0);
 			topk.add(t);
 		}
-		if(pois.size()>10000)
-		System.err.println(" time"+ TimeUnit.NANOSECONDS.toMillis((System.nanoTime()-time)));
+		if (timed)
+			System.err.println(" time" + TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - time)));
 		return topk;
 	}
 
@@ -99,12 +119,12 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 	}
 
 	private void processBlock(Block block, double eps, ScoreFunction<POI> scoreFunction, PriorityQueue<Block> queue,
-							  List<SpatialObject> topk,List<SpatialObject> previous) {
+							  List<SpatialObject> topk, List<SpatialObject> previous) {
 		try {
 			if (block.type == Block.BLOCK_TYPE_REGION) {
-				inspectResult(block, eps, topk,previous);
+				inspectResult(block, eps, topk, previous);
 			} else {
-				if(block!=null) {
+				if (block != null) {
 
 					List<Block> newBlocks = block.sweep();
 					queue.addAll(newBlocks);
@@ -129,23 +149,22 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		}
 	}
 
-	private void inspectResult(Block block, double eps, List<SpatialObject> topk,List<SpatialObject> previous) {
+	private void inspectResult(Block block, double eps, List<SpatialObject> topk, List<SpatialObject> previous) {
 		// generate candidate result
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
 		// Envelope e = block.envelope; // with tight mbr
-		if(block==null)
+		if (block == null)
 			return;
-		if(block.envelope==null)
+		if (block.envelope == null)
 			return;
-		if(block.envelope.centre()==null)
+		if (block.envelope.centre() == null)
 			return;
-		if(duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y+":"+block.type)) {
-			block.type=Block.EXPAND_NONE;
+		if (duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type)) {
+			block.type = Block.EXPAND_NONE;
 			return;
-		}
-		else
-			duplicate.add(block.envelope.centre().x + ":" + block.envelope.centre().y+":"+block.type);
+		} else
+			duplicate.add(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type);
 
 		// if this result is valid, add it to top-k
 		boolean isDistinct = true;
@@ -192,4 +211,10 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 	public void setDistinctMode(boolean distinctMode) {
 		this.distinctMode = distinctMode;
 	}
+
+
+	public static int myRound(double n, double resolution) { // use 1000, 5000
+		return (int) (n*resolution);
+	}
+
 }

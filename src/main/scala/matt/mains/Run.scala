@@ -1,4 +1,9 @@
 package matt.mains
+import java.util
+import java.util.{ArrayList, HashMap}
+
+import matt.POI
+
 import scala.math.pow
 import org.apache.spark.sql.SparkSession
 import matt.definitions.GridIndexer
@@ -8,18 +13,23 @@ import matt.definitions.Generic
 import org.apache.hadoop.conf.Configuration
 import org.apache.log4j.Logger
 import org.apache.log4j.Level
+import org.apache.spark.storage.StorageLevel
 
 object Run {
  def main(args: Array[String]) {
-
+System.out.println("-------------------------------------------------------------------------------------------------")
+System.out.println("-------------------------------------------------------------------------------------------------")
+System.out.println("-------------------------------------------------------------------------------------------------")
   ///////Param & Config
   //////////////////////////
   Logger.getLogger("org").setLevel(Level.OFF)
   Logger.getLogger("akka").setLevel(Level.OFF)
   val spark = SparkSession
     .builder
-  //  .master("local[*]")
+   // .master("local[*]")
     .appName("Simple Application")
+    .config("spark.dynamicAllocation.minExecutors","25")
+    .config("spark.dynamicAllocation.executorIdleTimeout","50000s")
     .config("spark.driver.port", "51810")
     .config("spark.fileserver.port", "51811")
     .config("spark.broadcast.port", "51812")
@@ -28,8 +38,8 @@ object Run {
     .config("spark.executor.port", "51815")
     //  .config("spark.executor.memory", "7g")
   //  .config("spark.driver.memory", "7g")
-    .config("spark.network.timeout", "60000s")
-    .config("spark.executor.heartbeatInterval", "10000s")
+    .config("spark.network.timeout", "600000s")
+    .config("spark.executor.heartbeatInterval", "100000s")
     .config("spark.shuffle.blockTransferService", "nio")
     .config("spark.worker.cleanup.enabled", "true")
   //  .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
@@ -37,13 +47,13 @@ object Run {
   val hadoopConfig: Configuration = spark.sparkContext.hadoopConfiguration
   hadoopConfig.set("fs.hdfs.impl", classOf[org.apache.hadoop.hdfs.DistributedFileSystem].getName)
   hadoopConfig.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
-  val poiInputFile = "~/osmpois-planet-cleaned.csv";
-  val poiInputFile9898 = "/home/hamid/5" + ".csv";
+  val poiInputFile12 = "~/osmpois-planet-cleaned.csv";
+  val poiInputFile = "/home/hamid/5" + ".csv";
   val poiInputFile6565 = "/home/hamid/reducedFlickr.csv";
   val poiInputFile3 = "/home/hamid/input.csv";
 
-  var eps = 0.0001
-  val topk = 1
+  var eps = 0.0005
+  val topk = 300
   val decayConstant = 0.7
 
 
@@ -54,7 +64,7 @@ object Run {
    ///////////////////////////////////////////////////////////////
 
    val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load("hdfs:///input2.csv").drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null))
-     .filter(x => (x.getAs[Double]("longtitude") > -10 && x.getAs[Double]("longtitude") < 35)).filter(x => (x.getAs[Double]("latitude") > 35 && x.getAs[Double]("latitude") < 80))////.filter(x => (x.getAs[Double]("longtitude")> -0.489 && x.getAs[Double]("longtitude")< 0.236)).filter(x => (x.getAs[Double]("latitude")> 51.28 && x.getAs[Double]("latitude")< 51.686));//;
+   //  .filter(x => (x.getAs[Double]("longtitude") > -10 && x.getAs[Double]("longtitude") < 35)).filter(x => (x.getAs[Double]("latitude") > 35 && x.getAs[Double]("latitude") < 80))//.filter(x => (x.getAs[Double]("longtitude")> -0.489 && x.getAs[Double]("longtitude")< 0.236)).filter(x => (x.getAs[Double]("latitude")> 51.28 && x.getAs[Double]("latitude")< 51.686));//;
    // val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load("hdfs:///input2.csv").drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null)).filter(x => (x.getAs[Double]("longtitude")> 3 && x.getAs[Double]("longtitude")< 12)).filter(x => (x.getAs[Double]("latitude")> 44 && x.getAs[Double]("latitude")< 53));
    //var inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load(poiInputFile).drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null))//.filter(x => (x.getAs[Double]("longtitude") > -0.489 && x.getAs[Double]("longtitude") < 0.236)).filter(x => (x.getAs[Double]("latitude") > 51.28 && x.getAs[Double]("latitude") < 51.686));
 
@@ -68,20 +78,20 @@ object Run {
    val minmaxLat = (minLat - eps / 10, maxLat + eps / 10);
    println("\n\nminmaxLat: " + minmaxLat + "\n\n");
  //  println("All POI Size:" + inputData.collect().size)
-
+   val width=20000
    // find to which node does each point belongs to : (NodeNo,Row)
-  for (eps<-Set(0.001,0.002)) {
+  for (eps<-List(0.00075,0.0005,0.00025)) {
    val dataSize = math.max((minmaxLat._2 - minmaxLat._1), (minmaxLong._2 - minmaxLong._1))
    val cellSize = eps.asInstanceOf[Double]
-   val p = cellSize / dataSize.asInstanceOf[Double]
    val dataSizePerCell = math.floor(dataSize / cellSize.asInstanceOf[Double]).toInt
-   val width = math.ceil(dataSizePerCell / 78).toInt
+  // val width = math.ceil(dataSizePerCell / x).toInt
    val cores = width*width
    val gridIndexer = new GridIndexer(width, eps, minmaxLong, minmaxLat)
-   val shift = gridIndexer.gridSizePerCell * gridIndexer.cellSize
    println("cells per partition:" + gridIndexer.gridSizePerCell)
    val geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
    val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer));
+   nodeToPoint.persist( StorageLevel.MEMORY_AND_DISK);
+//  println(nodeToPoint.groupByKey().map(x=>mergeStat(x._2)).reduce((a,b)=>a+b))
    // nodeToPoint.map(x=>gridIndexer.getCellIndex(x._2.getPoint.getX,x._2.getPoint.getY)).groupBy(l => l).map(t => (t._1, t._2.toList.size)).filter(x=>x._2>1000).foreach(println)
 
    ////////End Read & split data poi to each worker
@@ -97,13 +107,21 @@ object Run {
 
    if (Nstep) {
     val t = System.nanoTime()
-    println("Nstep:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
+    println("Nstep:::        eps:" + eps + "       topk:" + topk + "     cores:" + cores)
     matt.distrib.NstepAlgo.Run(nodeToPoint, eps, topk);
     println("Nstep:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
     println("-----------------------------------------------------------------------------------------------------------------------------")
     println("-----------------------------------------------------------------------------------------------------------------------------")
    }
-
+   if (OneStepOptimized) {
+    val t = System.nanoTime()
+    println("SingleOpt:::           eps:" + eps + "       topk:" + topk + "     cores:" + cores)
+    val nodeOptToPoint = inputData.rdd.flatMap(x => Generic.poiOptToKeyValue(x, geometryFactory, gridIndexer));
+    matt.distrib.OnestepAlgoOptimized.Run(nodeOptToPoint, eps, decayConstant, topk, gridIndexer)
+    println("SingleOpt:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
+    println("-----------------------------------------------------------------------------------------------------------------------------")
+    println("-----------------------------------------------------------------------------------------------------------------------------")
+   }
    /* if (Nstep2) {
    matt.distrib.NstepAlgo2.Run(nodeToPoint, eps, topk, width)
   }*/
@@ -116,17 +134,32 @@ object Run {
     println("-----------------------------------------------------------------------------------------------------------------------------")
     println("-----------------------------------------------------------------------------------------------------------------------------")
    }
-   if (OneStepOptimized) {
-    val t = System.nanoTime()
-    println("Single:::           eps:" + eps + "       topk:" + topk + "     cores:" + cores)
-    val nodeOptToPoint = inputData.rdd.flatMap(x => Generic.poiOptToKeyValue(x, geometryFactory, gridIndexer));
-    matt.distrib.OnestepAlgoOptimized.Run(nodeOptToPoint, eps, decayConstant, topk, gridIndexer)
-    println("SingleOpt:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
-    println("-----------------------------------------------------------------------------------------------------------------------------")
-    println("-----------------------------------------------------------------------------------------------------------------------------")
-   }
+
   }
   spark.stop()
  };
 
+ def mergeStat(input:  Iterable[POI]):Int= {
+  val input2 = new util.ArrayList[POI]
+  if (input.size > 5000) {
+   val temp: util.HashMap[String, POI] = new util.HashMap[String, POI]
+   for (poi <- input) {
+    val x: Double = myRound(poi.getPoint.getX, 1000)
+    val y: Double = myRound(poi.getPoint.getY, 1000)
+    if (temp.containsValue(x + ":" + y)) temp.get(x + ":" + y).increaseScore()
+    else temp.put(x + ":" + y, poi)
+   }
+   System.err.println("before " + input.size)
+   System.err.println(temp.size)
+
+   input2.addAll(temp.values)
+   System.err.println("after " + input.size)
+   return input2.size
+  }
+  return input.size
+ }
+
+ def myRound(n: Double, resolution: Double): Int = { // use 1000, 5000
+  (n * resolution).toInt
+ }
 }

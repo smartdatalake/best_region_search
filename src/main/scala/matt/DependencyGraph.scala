@@ -12,8 +12,16 @@ class DependencyGraph (gridIndexer: GridIndexer) {
   val indexToSpatialObjM = new HashMap[(Int, Int), Set[SpatialObject]] with MultiMap[(Int, Int), SpatialObject]
   val indexToDependentNeighborCell = new mutable.HashSet[(Int, Int)]()
   val duplicate = new mutable.HashSet[String]
+  var partition = -1
   var safeRegionCnt: Int = 0
-
+var cornerA=(-1,-1)
+  var cornerB=(-1,-1)
+  def setPartNum(a:Int)={
+    partition=a
+    val (nodeI,nodeJ)=gridIndexer.getNodeIndex(a)
+    cornerA=(nodeI*gridIndexer.gridSizePerCell,nodeJ*gridIndexer.gridSizePerCell)
+    cornerB=(cornerA._1+gridIndexer.gridSizePerCell-1,cornerA._2+gridIndexer.gridSizePerCell-1)
+  }
   def increaseSafeCNT() = {
     safeRegionCnt += 1
   }

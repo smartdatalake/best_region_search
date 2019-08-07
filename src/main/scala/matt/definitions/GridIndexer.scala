@@ -41,8 +41,6 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
     result += ((nodeI, nodeJ))
     if (nodeI != 0 && (cellInI == 0 || cellInI == 1)) {
       result += ((nodeI - 1, nodeJ))
-      //result += ((nodeI, nodeJ - 1))
-      //result += ((nodeI - 1, nodeJ - 1))
     }
     if (nodeJ != 0 && (cellInJ == 0 || cellInJ == 1))
       result += ((nodeI, nodeJ - 1))

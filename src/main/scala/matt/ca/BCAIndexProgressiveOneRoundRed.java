@@ -1,8 +1,8 @@
 package matt.ca;
-import matt.*;
 
-import matt.definitions.Generic;
+import matt.*;
 import matt.definitions.GridIndexer;
+import matt.score.OneStepResult;
 import matt.score.ScoreFunction;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -10,10 +10,9 @@ import org.locationtech.jts.geom.PrecisionModel;
 import scala.Tuple2;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
-public class BCAIndexProgressiveOneRound {
+public class BCAIndexProgressiveOneRoundRed {
 	private boolean IsOptimized;
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
@@ -26,21 +25,23 @@ public class BCAIndexProgressiveOneRound {
 	private int node;
 	private HashSet<String> duplicate = new HashSet<>();
 
-	public BCAIndexProgressiveOneRound(boolean distinctMode, GridIndexer gridIndexer) {
+	public BCAIndexProgressiveOneRoundRed(boolean distinctMode, GridIndexer gridIndexer) {
 		super();
 		this.distinctMode = distinctMode;
 		this.gridIndexer = gridIndexer;
 	}
 
 
-	public Object findBestCatchmentAreas(List<POI> pois, double eps, int k, ScoreFunction<POI> scoreFunction) {
+	public OneStepResult findBestCatchmentAreas(List<POI> pois,int node, double eps, int k, ScoreFunction<POI> scoreFunction) {
 		IsOptimized = false;
+		DependencyGraph dependencyGraph = new DependencyGraph(gridIndexer);
+		dependencyGraph.setPartNum(node);
 		if (pois.size() == 0) {
 			SpatialObject t = new SpatialObject();
 			t.setScore(0);
 			List<SpatialObject> topk = new ArrayList<SpatialObject>();
 			topk.add(t);
-			return topk;
+			return new OneStepResult((int)(dependencyGraph.cornerA()._1),(int)(dependencyGraph.cornerA()._2),(int)(dependencyGraph.cornerB()._1),(int)(dependencyGraph.cornerB()._2), (List<SpatialObject>) dependencyGraph.getFinalResult().toList());
 		}
 		if (pois.size() > 5000) {
 			HashMap<String, POI> temp = new HashMap<>();
@@ -63,17 +64,17 @@ public class BCAIndexProgressiveOneRound {
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
 		Block block;
-		DependencyGraph dependencyGraph = new DependencyGraph(gridIndexer);
+
 		while (dependencyGraph.safeRegionCnt() < k && !queue.isEmpty()) {
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
 		//if(unsafeCNT>0)
 		//System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
-		return dependencyGraph.getFinalResult().toList();
+		return new OneStepResult((int)(dependencyGraph.cornerA()._1),(int)(dependencyGraph.cornerA()._2),(int)(dependencyGraph.cornerB()._1),(int)(dependencyGraph.cornerB()._2), (List<SpatialObject>) dependencyGraph.getFinalResult().toList());
 	}
 
-	public Object findBestCatchmentAreas(List<POI> pois, SpatialObject left, SpatialObject up, SpatialObject Corner
+	public OneStepResult findBestCatchmentAreas(List<POI> pois, SpatialObject left, SpatialObject up, SpatialObject Corner
 			, int node, double eps, int k, ScoreFunction<POI> scoreFunction) {
 		IsOptimized = true;
 		if (pois.size() == 0) {
@@ -81,7 +82,7 @@ public class BCAIndexProgressiveOneRound {
 			t.setScore(0);
 			List<SpatialObject> topk = new ArrayList<SpatialObject>();
 			topk.add(t);
-			return topk;
+			return null;
 		}
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		this.corner = Corner;
@@ -99,7 +100,7 @@ public class BCAIndexProgressiveOneRound {
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
 		System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
-		return dependencyGraph.getFinalResult().toList();
+		return new OneStepResult((int)(dependencyGraph.cornerA()._1),(int)(dependencyGraph.cornerA()._2),(int)(dependencyGraph.cornerB()._1),(int)(dependencyGraph.cornerB()._2), (List<SpatialObject>) dependencyGraph.getFinalResult().toList());
 	}
 
 	public Object findBestCatchmentAreas(List<POI> pois, List<BorderResult> border, int node, double eps, int k, ScoreFunction<POI> scoreFunction) {
@@ -197,7 +198,7 @@ public class BCAIndexProgressiveOneRound {
 			return;
 		} else
 			duplicate.add(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type);
-		scala.Tuple2 index = gridIndexer.getCellIndexInGrid(node, candidate);
+		Tuple2 index = gridIndexer.getCellIndexInGrid(node, candidate);
 		int cellInI = (int) index._1();
 		int cellInJ = (int) index._2();
 		int con = dependencyGraph.overlapCon(candidate);

@@ -51,11 +51,11 @@ object OnestepAlgoOptimized {
       pos += 1
     }
 
-    println("\n");
-    println("Final Result");
-    println("\n");
+   // println("\n");
+   // println("Final Result");
+   // println("\n");
 
-    Ans.sortBy(_.getScore).reverse.foreach(x => println(x.getId + ":::::::" + x.getScore))
+ //   Ans.sortBy(_.getScore).reverse.foreach(x => println(x.getId + ":::::::" + x.getScore))
   }
 
   def localAnsReducer(a: List[SpatialObject], b: List[SpatialObject]): List[SpatialObject] = {
@@ -113,8 +113,11 @@ object OnestepAlgoOptimized {
         t.+=(poi)
         border.+=(((cellInI, cellInJ), t))
       }
-      else if ((cellInI > 0 || cellInJ > 0 || cellInI < gridIndexer.gridSizePerCell || cellInJ < gridIndexer.gridSizePerCell)) {
+      else if ((cellInI > 0 && cellInJ > 0 && cellInI < gridIndexer.gridSizePerCell && cellInJ < gridIndexer.gridSizePerCell)) {
         inside += poi
+      }
+      else{
+        System.err.println("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
       }
     }
     return (inside, border)
