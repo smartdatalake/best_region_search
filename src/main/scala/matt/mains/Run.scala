@@ -80,7 +80,7 @@ System.out.println("------------------------------------------------------------
  //  println("All POI Size:" + inputData.collect().size)
    val width=20000
    // find to which node does each point belongs to : (NodeNo,Row)
-  for (eps<-List(0.00075,0.0005,0.00025)) {
+  for (eps<-List(0.001,0.00075,0.0005,0.00025)) {
    val dataSize = math.max((minmaxLat._2 - minmaxLat._1), (minmaxLong._2 - minmaxLong._1))
    val cellSize = eps.asInstanceOf[Double]
    val dataSizePerCell = math.floor(dataSize / cellSize.asInstanceOf[Double]).toInt

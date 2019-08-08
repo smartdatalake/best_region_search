@@ -190,8 +190,7 @@ public class BCAIndexProgressiveOneRound {
 		int g = gridIndexer.gridSizePerCell();
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
-		SpatialObject candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
-				null, block.utilityScore, geometryFactory.toGeometry(e));
+		SpatialObject candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, block.utilityScore, geometryFactory.toGeometry(e));
 		if (duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type)) {
 			block.type = Block.EXPAND_NONE;
 			return;
@@ -258,18 +257,16 @@ public class BCAIndexProgressiveOneRound {
 		e.expandBy(eps / 2); // with fixed size eps
 		SpatialObject candidate=new SpatialObject();
 		try {
-			candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
-					null, block.utilityScore, geometryFactory.toGeometry(e));
+			candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, block.utilityScore, geometryFactory.toGeometry(e));
 		}
 		catch (Exception o){
 			System.out.println(block);
 		}
-		if (duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type)) {
+		if (duplicate.contains(myRound(block.envelope.centre().x,10000) + ":" + myRound(block.envelope.centre().y,10000) + ":" + block.type)) {
 			block.type = Block.EXPAND_NONE;
 			return;
 		} else
-			duplicate.add(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type);
-
+			duplicate.add(myRound(block.envelope.centre().x,10000) + ":" + myRound(block.envelope.centre().y,10000) + ":" + block.type);
 		int con = dependencyGraph.overlapCon(candidate);
 
 		//1st Condition

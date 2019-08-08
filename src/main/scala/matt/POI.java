@@ -13,9 +13,9 @@ public class POI extends SpatialObject implements Serializable {
 		super();
 	}
 
-	public POI(String id, String name, double x, double y, List<String> keywords, double score,
+	public POI(String id, double x, double y, double score,
 			GeometryFactory geometryFactory) {
-		super(id, name, keywords, score, geometryFactory.createPoint(new Coordinate(x, y)));
+		super(id, score, geometryFactory.createPoint(new Coordinate(x, y)));
 	}
 
 	public Point getPoint() {

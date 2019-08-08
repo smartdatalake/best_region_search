@@ -120,7 +120,7 @@ public class InputFileParser {
 					continue;
 				}
 
-				poi = new POI(id, name, x, y, keywords, score, geometryFactory);
+				poi = new POI(id, x, y, score, geometryFactory);
 
 				pois.add(poi);
 				poiCount++;

@@ -69,27 +69,41 @@ object OnestepAlgored {
     ((nodeI / base).toInt + (nodeJ / base).toInt * gridIndexer.width + 1, result)
   }
 
-/*  def reducer(index:Int, results:Iterable[OneStepResult]):(Int,OneStepResult)= {
-    var cornerA1 = 2000000000
-    var cornerA2 = 2000000000
-    var cornerB1 = -10
-    var cornerB2 = -10
+  def reducer(index:Int, results:Iterable[OneStepResult]):(Int,OneStepResult)= {
+    var cornerALong = 2000000000
+    var cornerALat = 2000000000
+    var cornerBLong = -10
+    var cornerBLat = -10
+    val output:OneStepResult=new OneStepResult()
     results.foreach(x => {
-      if (x.cornerA1 < cornerA1) cornerA1 = x.cornerA1
-      if (x.cornerA2 < cornerA2) cornerA2 = x.cornerA2
-      if (x.cornerB1 > cornerB1) cornerB1 = x.cornerB1
-      if (x.cornerB2 > cornerB2) cornerB2 = x.cornerB2
+      if (x.cornerALong < cornerALong) cornerALong = x.cornerALong
+      if (x.cornerALat < cornerALat) cornerALat = x.cornerALat
+      if (x.cornerBLong > cornerBLong) cornerBLong = x.cornerBLong
+      if (x.cornerBLat > cornerBLat) cornerBLat = x.cornerBLat
     })
     var candidates = new ListBuffer[SpatialObject]
     results.foreach(x => candidates.addAll(x.spatialObjects))
     candidates=candidates.sortBy(_.getScore).reverse
     var pos=0
-    while(pos<=topK && pos < candidates.size){
-      val (cellI,cellJ)=gridIndexer.get
+    var safe=0
+    while(safe<=topK && pos < candidates.size){
+      val instance =candidates.get(pos)
+      val (cellI,cellJ)=gridIndexer.getCellIndex(instance.getGeometry.getCoordinates.toList(1).x.toFloat
+        , instance.getGeometry.getCoordinates.toList(1).y.toFloat)
+      if(cellI==cornerALong || cellI==cornerBLong || cellJ==cornerALat||cellJ==cornerBLat)
+        output.spatialObjects.add(instance)
+      else if(!Generic.intersectsList(instance, output.spatialObjects.asInstanceOf[ListBuffer[SpatialObject]])) {
+        output.spatialObjects.add(instance)
+        safe += 1
+      }
+      pos+=1
     }
-    result.cornerA = (cornerA1, cornerA2)
-    result.cornerB = (cornerB1, cornerB2)
-  }*/
+    output.cornerALong = cornerALong
+    output.cornerALat =  cornerALat
+    output.cornerBLong = cornerBLong
+    output.cornerBLat = cornerBLat
+    (index,output)
+  }
  // def reducer()
  /*   var temp1 = new ListBuffer[SpatialObject]()
     temp1.addAll(a.toList)

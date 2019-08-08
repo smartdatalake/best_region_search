@@ -191,8 +191,7 @@ public class BCAIndexProgressiveOneRoundRed {
 		int g = gridIndexer.gridSizePerCell();
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
-		SpatialObject candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
-				null, block.utilityScore, geometryFactory.toGeometry(e));
+		SpatialObject candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, block.utilityScore, geometryFactory.toGeometry(e));
 		if (duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type)) {
 			block.type = Block.EXPAND_NONE;
 			return;
@@ -259,8 +258,7 @@ public class BCAIndexProgressiveOneRoundRed {
 		e.expandBy(eps / 2); // with fixed size eps
 		SpatialObject candidate=new SpatialObject();
 		try {
-			candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
-					null, block.utilityScore, geometryFactory.toGeometry(e));
+			candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, block.utilityScore, geometryFactory.toGeometry(e));
 		}
 		catch (Exception o){
 			System.out.println(block);

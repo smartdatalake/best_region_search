@@ -160,11 +160,11 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			return;
 		if (block.envelope.centre() == null)
 			return;
-		if (duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type)) {
+		if (duplicate.contains(myRound(block.envelope.centre().x,10000) + ":" + myRound(block.envelope.centre().y,10000) + ":" + block.type)) {
 			block.type = Block.EXPAND_NONE;
 			return;
 		} else
-			duplicate.add(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type);
+			duplicate.add(myRound(block.envelope.centre().x,10000) + ":" + myRound(block.envelope.centre().y,10000) + ":" + block.type);
 
 		// if this result is valid, add it to top-k
 		boolean isDistinct = true;
@@ -183,8 +183,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			}
 		}
 		if (isDistinct) {
-			SpatialObject result = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, null,
-					null, block.utilityScore, geometryFactory.toGeometry(e));
+			SpatialObject result = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y,  block.utilityScore, geometryFactory.toGeometry(e));
 			topk.add(result);
 		}
 	}
