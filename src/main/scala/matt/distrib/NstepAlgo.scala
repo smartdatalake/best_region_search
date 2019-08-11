@@ -32,7 +32,7 @@ object NstepAlgo {
     while (Ans.length < K) {
       println("Current Iteration: " + iteration);
       // calculate the local results at each node.
-      val resultRegionOfRound = nodeToPoint.groupByKey().filter(x=>x._2!=null).filter(x=>x._2.size>0).map(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans)).reduce((a,b)=>localAnsReducer(a,b,Kprime)).sortBy(_.getScore).reverse;
+      val resultRegionOfRound = nodeToPoint.groupByKey().map(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans)).reduce((a,b)=>localAnsReducer(a,b,Kprime)).sortBy(_.getScore).reverse;
       /////take Kprime acceptable regions from current round answers as "roundAnswers"
       ////////////////////////////////
       ///////////////////////////////////////////////////////////
