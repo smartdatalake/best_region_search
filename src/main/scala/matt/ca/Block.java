@@ -172,7 +172,7 @@ public class Block implements Comparable<Block>, Serializable {
 				if (isMin) {
 			//		block = new Block(pois, scoreFunction, type + 1, Block.BLOCK_ORIENTATION_HORIZONTAL, EXPAND_BOTH,
 			//				eps, geometryFactory);
-					block = new Block(pois, scoreFunction, type + 1, Block.BLOCK_ORIENTATION_HORIZONTAL, EXPAND_BOTH,
+					block = new Block(new ArrayList<>(pois), scoreFunction, type + 1, Block.BLOCK_ORIENTATION_HORIZONTAL, EXPAND_BOTH,
 							eps, geometryFactory,0,pois.size()-1);
 					block.expandLeft = expandLeft;
 					expandLeft = 0;

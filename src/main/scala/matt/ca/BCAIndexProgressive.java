@@ -46,13 +46,13 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			} else
 				temp.put(x + ":" + y, poi);
 
-			//		System.err.println("before "+ pois.size());
-			//		System.err.println(temp.size());
+					System.err.println("before "+ pois.size());
+					System.err.println(temp.size());
 			pois = new ArrayList<>();
 			pois.addAll(temp.values());
-			//		System.err.println("after "+pois.size());
+					System.err.println("after "+pois.size());
 		}
-		//	System.err.println("Now start with pois# "+ pois.size());
+			System.err.println("Now start with pois# "+ pois.size());
 		List<SpatialObject> topk = new ArrayList<SpatialObject>();
 		if (pois.size() == 0) {
 			SpatialObject t = new SpatialObject();
@@ -192,7 +192,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			}
 		}
 		if (isDistinct) {
-			SpatialObject result = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y,  block.utilityScore, geometryFactory.toGeometry(e));
+			SpatialObject result = new SpatialObject( block.envelope.centre().y+","+block.envelope.centre().x ,  block.relevanceScore, geometryFactory.toGeometry(e));
 			topk.add(result);
 		}
 	}
