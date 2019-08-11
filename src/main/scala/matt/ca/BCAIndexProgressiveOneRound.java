@@ -4,6 +4,7 @@ import matt.*;
 import matt.definitions.Generic;
 import matt.definitions.GridIndexer;
 import matt.score.ScoreFunction;
+import matt.score.ScoreFunctionTotalScore;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -33,7 +34,7 @@ public class BCAIndexProgressiveOneRound {
 	}
 
 
-	public Object findBestCatchmentAreas(List<POI> pois, double eps, int k, ScoreFunction<POI> scoreFunction) {
+	public Object findBestCatchmentAreas(List<POI> pois, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction) {
 		IsOptimized = false;
 		if (pois.size() == 0) {
 			SpatialObject t = new SpatialObject();
@@ -74,7 +75,7 @@ public class BCAIndexProgressiveOneRound {
 	}
 
 	public Object findBestCatchmentAreas(List<POI> pois, SpatialObject left, SpatialObject up, SpatialObject Corner
-			, int node, double eps, int k, ScoreFunction<POI> scoreFunction) {
+			, int node, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction) {
 		IsOptimized = true;
 		if (pois.size() == 0) {
 			SpatialObject t = new SpatialObject();
@@ -102,7 +103,7 @@ public class BCAIndexProgressiveOneRound {
 		return dependencyGraph.getFinalResult().toList();
 	}
 
-	public Object findBestCatchmentAreas(List<POI> pois, List<BorderResult> border, int node, double eps, int k, ScoreFunction<POI> scoreFunction) {
+	public Object findBestCatchmentAreas(List<POI> pois, List<BorderResult> border, int node, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction) {
 		DependencyGraph dependencyGraph = new DependencyGraph(gridIndexer);
 		if (pois.size() == 0) {
 			return dependencyGraph.getFinalResult();
@@ -119,13 +120,14 @@ public class BCAIndexProgressiveOneRound {
 
 		while (dependencyGraph.safeRegionCnt() < k && !queue.isEmpty()) {
 			block = queue.poll();
+		//	if(block.)
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
 		//System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
 		return dependencyGraph.getFinalResult().toList();
 	}
 
-	private PriorityQueue<Block> initQueue(Grid grid, ScoreFunction<POI> scoreFunction, double eps) {
+	private PriorityQueue<Block> initQueue(Grid grid, ScoreFunctionTotalScore<POI> scoreFunction, double eps) {
 
 		PriorityQueue<Block> queue = new PriorityQueue<Block>();
 
@@ -153,10 +155,14 @@ public class BCAIndexProgressiveOneRound {
 					}
 				}
 
-				block = new Block(cellPois, scoreFunction, Block.BLOCK_TYPE_CELL, Block.BLOCK_ORIENTATION_VERTICAL,
-						Block.EXPAND_NONE, eps, geometryFactory);
+			//	block = new Block(cellPois, scoreFunction, Block.BLOCK_TYPE_CELL, Block.BLOCK_ORIENTATION_VERTICAL,
+			//			Block.EXPAND_NONE, eps, geometryFactory);
+				if(cellPois.size()>0) {
+					block = new Block(cellPois, scoreFunction, Block.BLOCK_TYPE_CELL, Block.BLOCK_ORIENTATION_VERTICAL,
+							Block.EXPAND_NONE, eps, geometryFactory, 0, cellPois.size() - 1);
 
-				queue.add(block);
+					queue.add(block);
+				}
 			}
 		}
 		return queue;
@@ -175,7 +181,8 @@ public class BCAIndexProgressiveOneRound {
 		}
 
 		// insert the two derived sub-blocks in the queue
-		if ((block.type == Block.BLOCK_TYPE_SLAB || block.type == Block.BLOCK_TYPE_REGION) && block.pois.size() > 1) {
+		//if ((block.type == Block.BLOCK_TYPE_SLAB || block.type == Block.BLOCK_TYPE_REGION) && block.pois.size() > 1) {
+		if ((block.type == Block.BLOCK_TYPE_SLAB || block.type == Block.BLOCK_TYPE_REGION) && (block.end-block.start+1) > 1) {
 			Block[] derivedBlocks = block.getSubBlocks();
 			for (int i = 0; i < derivedBlocks.length; i++) {
 				queue.add(derivedBlocks[i]);
@@ -293,11 +300,14 @@ public class BCAIndexProgressiveOneRound {
 	}
 
 	@SuppressWarnings("unused")
+/*
 	private void removeOverlappingPoints(Block block, List<SpatialObject> topk) {
-		/*
+		*/
+/*
 		 * Check if any existing results overlap with this block. If so, remove common
 		 * points.
-		 */
+		 *//*
+
 		List<SpatialObject> overlappingResults = new ArrayList<SpatialObject>(topk);
 		Envelope border = block.envelope;
 		overlappingResults.removeIf(p -> !border.intersects(p.getGeometry().getEnvelopeInternal()));
@@ -306,6 +316,7 @@ public class BCAIndexProgressiveOneRound {
 			block.pois.removeIf(p -> r.getGeometry().covers(p.getPoint()));
 		}
 	}
+*/
 
 	public boolean getDistinctMode() {
 		return distinctMode;

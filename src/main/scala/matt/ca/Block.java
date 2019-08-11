@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import matt.score.ScoreFunctionTotalScore;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
@@ -28,24 +29,29 @@ public class Block implements Comparable<Block>, Serializable {
 	public static final int EXPAND_NONE = -1;
 
 	public List<POI> pois;
+	public int start;
+	public int end;
 	public double utilityScore, relevanceScore;
 	public Envelope envelope;
 	public List<Rectangle> orderedRectangles;
 	public int type, orientation, expansion;
-	public ScoreFunction<POI> scoreFunction;
+	public ScoreFunctionTotalScore<POI> scoreFunction;
 	public double eps;
 	public int precedingResults;
 	public int expandLeft, expandRight;
 
 	private GeometryFactory geometryFactory;
 
-	public Block(List<POI> pois, ScoreFunction<POI> scoreFunction, int type, int orientation, int expansion, double eps,
-			GeometryFactory geometryFactory) {
+	public Block(List<POI> pois, ScoreFunctionTotalScore<POI> scoreFunction, int type, int orientation, int expansion, double eps,
+                 GeometryFactory geometryFactory, int start, int end) {
 		this.geometryFactory = geometryFactory;
-		this.pois = new ArrayList<POI>(pois);
+		this.pois = pois;
+		this.start=start;
+		this.end=end;
 		this.scoreFunction = scoreFunction;
 		this.eps = eps;
-		this.relevanceScore = scoreFunction.computeScore(pois);
+	//	this.relevanceScore = scoreFunction.computeScore(pois);
+		this.relevanceScore = scoreFunction.computeScore(pois,start,end);
 		this.utilityScore = this.relevanceScore;
 		this.envelope = computeEnvelope(pois);
 		this.type = type;
@@ -58,9 +64,18 @@ public class Block implements Comparable<Block>, Serializable {
 	}
 
 	private Envelope computeEnvelope(List<POI> pois) {
-		Point[] points = new Point[pois.size()];
+		//Point[] points = new Point[end-start+1];
+		if(start>end||end>=pois.size())
+			return null;
+		Point[] points = new Point[end-start+1];
 		for (int i = 0; i < points.length; i++) {
-			points[i] = pois.get(i).getPoint();
+		//	points[i] = pois.get(i).getPoint();
+			try {
+				points[i] = pois.get(i + start).getPoint();
+			}
+			catch (Exception e){
+				System.out.println(start+"  "+end+"    "+ i+"    "+ pois.size());
+			}
 		}
 		Envelope envelope = geometryFactory.createGeometryCollection(points).getEnvelopeInternal();
 		return envelope;
@@ -71,7 +86,9 @@ public class Block implements Comparable<Block>, Serializable {
 		double center;
 		ArrayList<Rectangle> rectangles = new ArrayList<Rectangle>();
 	//	try {
-			for (POI p : pois) {
+			//for (POI p : pois) {
+		for(int i=start;i<=end&&i<pois.size();i++){
+				POI p=pois.get(i);
 				center = (orientation == BLOCK_ORIENTATION_HORIZONTAL) ? (float) p.getPoint().getX() : (float) p.getPoint().getY();
 				rectangles.add(new Rectangle((float) (center - eps / 2), true, p));
 				rectangles.add(new Rectangle((float) (center + eps / 2), false, p));
@@ -91,34 +108,42 @@ public class Block implements Comparable<Block>, Serializable {
 	public Block[] getSubBlocks() {
 		Block[] derivedBlocks = new Block[]{};
 
-		if (expandLeft > 0 && expandRight > 0) {
+		if (expandLeft > 0 && expandRight > 0&&start<end) {
 			derivedBlocks = new Block[2];
-			List<POI> leftSublist = new ArrayList<POI>(pois);
-			leftSublist.remove(pois.size() - 1);
-			List<POI> rightSublist = new ArrayList<POI>(pois);
-			rightSublist.remove(0);
-			derivedBlocks[0] = new Block(leftSublist, scoreFunction, type, orientation, EXPAND_BACKWARD, eps,
-					geometryFactory);
+			//	List<POI> leftSublist = new ArrayList<POI>(pois);
+			//	leftSublist.remove(pois.size() - 1);
+			//	List<POI> rightSublist = new ArrayList<POI>(pois);
+			//	rightSublist.remove(0);
+			//derivedBlocks[0] = new Block(leftSublist, scoreFunction, type, orientation, EXPAND_BACKWARD, eps,
+			//		geometryFactory);
+			derivedBlocks[0] = new Block(pois, scoreFunction, type, orientation, EXPAND_BACKWARD, eps,
+					geometryFactory, start, end - 1);
 			derivedBlocks[0].expandLeft = expandLeft - 1;
 			derivedBlocks[0].expandRight = 0;
 
-			derivedBlocks[1] = new Block(rightSublist, scoreFunction, type, orientation, EXPAND_FORWARD, eps,
-					geometryFactory);
+			//	derivedBlocks[1] = new Block(rightSublist, scoreFunction, type, orientation, EXPAND_FORWARD, eps,
+			//			geometryFactory);
+			derivedBlocks[1] = new Block(pois, scoreFunction, type, orientation, EXPAND_FORWARD, eps,
+					geometryFactory, start + 1, end);
 			derivedBlocks[1].expandRight = expandRight - 1;
 			derivedBlocks[1].expandLeft = 0;
-		} else if (expandLeft > 0) {
+		} else if (expandLeft > 0 && start<end) {
 			derivedBlocks = new Block[1];
-			List<POI> leftSublist = new ArrayList<POI>(pois);
-			leftSublist.remove(pois.size() - 1);
-			derivedBlocks[0] = new Block(leftSublist, scoreFunction, type, orientation, EXPAND_BACKWARD, eps,
-					geometryFactory);
+			//	List<POI> leftSublist = new ArrayList<POI>(pois);
+			//	leftSublist.remove(pois.size() - 1);
+			//	derivedBlocks[0] = new Block(leftSublist, scoreFunction, type, orientation, EXPAND_BACKWARD, eps,
+			//			geometryFactory);
+			derivedBlocks[0] = new Block(pois, scoreFunction, type, orientation, EXPAND_BACKWARD, eps,
+					geometryFactory, start, end - 1);
 			derivedBlocks[0].expandLeft = expandLeft - 1;
-		} else if (expandRight > 0) {
+		} else if (expandRight > 0 && start<end) {
 			derivedBlocks = new Block[1];
-			List<POI> rightSublist = new ArrayList<POI>(pois);
-			rightSublist.remove(0);
-			derivedBlocks[0] = new Block(rightSublist, scoreFunction, type, orientation, EXPAND_FORWARD, eps,
-					geometryFactory);
+			//	List<POI> rightSublist = new ArrayList<POI>(pois);
+			//	rightSublist.remove(0);
+			//	derivedBlocks[0] = new Block(rightSublist, scoreFunction, type, orientation, EXPAND_FORWARD, eps,
+			//			geometryFactory);
+			derivedBlocks[0] = new Block(pois, scoreFunction, type, orientation, EXPAND_FORWARD, eps,
+					geometryFactory, start + 1, end);
 			derivedBlocks[0].expandRight = expandRight - 1;
 		}
 
@@ -145,8 +170,10 @@ public class Block implements Comparable<Block>, Serializable {
 				isMin = true;
 			} else {
 				if (isMin) {
+			//		block = new Block(pois, scoreFunction, type + 1, Block.BLOCK_ORIENTATION_HORIZONTAL, EXPAND_BOTH,
+			//				eps, geometryFactory);
 					block = new Block(pois, scoreFunction, type + 1, Block.BLOCK_ORIENTATION_HORIZONTAL, EXPAND_BOTH,
-							eps, geometryFactory);
+							eps, geometryFactory,0,pois.size()-1);
 					block.expandLeft = expandLeft;
 					expandLeft = 0;
 				}
@@ -173,8 +200,10 @@ public class Block implements Comparable<Block>, Serializable {
 		for (Rectangle r : orderedRectangles) {
 			if (r.isMin) {
 				pois.add(r.p);
+			//	blocks.add(new Block(pois, scoreFunction, type + 1, Block.BLOCK_ORIENTATION_HORIZONTAL, EXPAND_NONE,
+			//			eps, geometryFactory));
 				blocks.add(new Block(pois, scoreFunction, type + 1, Block.BLOCK_ORIENTATION_HORIZONTAL, EXPAND_NONE,
-						eps, geometryFactory));
+						eps, geometryFactory,start,end));
 				// isMin = true;
 			} else {
 				// if (isMin) {
@@ -183,8 +212,10 @@ public class Block implements Comparable<Block>, Serializable {
 				// geometryFactory));
 				// }
 				pois.remove(r.p);
+			//	blocks.add(new Block(pois, scoreFunction, type + 1, Block.BLOCK_ORIENTATION_HORIZONTAL, EXPAND_NONE,
+			//			eps, geometryFactory));
 				blocks.add(new Block(pois, scoreFunction, type + 1, Block.BLOCK_ORIENTATION_HORIZONTAL, EXPAND_NONE,
-						eps, geometryFactory));
+						eps, geometryFactory,start,end));
 				// isMin = false;
 			}
 		}

@@ -11,17 +11,16 @@ import scala.collection.mutable.ListBuffer
 import matt.POI
 import matt.SpatialObject
 import matt.ca.BCAIndexProgressive
-import matt.score.ScoreFunctionCount
+import matt.score.{ScoreFunctionCount, ScoreFunctionTotalScore}
 import matt.definitions.Generic
 
 object NstepAlgo {
 
   def localAlgo(input:  Iterable[POI], eps: Double, topk: Int, finalAnswers: List[SpatialObject]): List[SpatialObject] = {
-    val scoreFunction = new ScoreFunctionCount[POI]();
+   // val scoreFunction = new ScoreFunctionCount[POI]();
+    val scoreFunction = new ScoreFunctionTotalScore[POI]();
     val distinct = true;
     val bcaFinder = new BCAIndexProgressive(distinct);
-    val t=System.nanoTime();
-
     return bcaFinder.findBestCatchmentAreas(input.toList, eps, topk, scoreFunction, finalAnswers).toList;
   }
 
@@ -33,7 +32,7 @@ object NstepAlgo {
     while (Ans.length < K) {
       println("Current Iteration: " + iteration);
       // calculate the local results at each node.
-      val resultRegionOfRound = nodeToPoint.groupByKey().map(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans)).reduce((a,b)=>localAnsReducer(a,b,Kprime)).sortBy(_.getScore).reverse;
+      val resultRegionOfRound = nodeToPoint.groupByKey().filter(x=>x._2!=null).filter(x=>x._2.size>0).map(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans)).reduce((a,b)=>localAnsReducer(a,b,Kprime)).sortBy(_.getScore).reverse;
       /////take Kprime acceptable regions from current round answers as "roundAnswers"
       ////////////////////////////////
       ///////////////////////////////////////////////////////////

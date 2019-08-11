@@ -28,7 +28,7 @@ public class SpatialObject implements Comparable<SpatialObject> , Serializable {
 	}
 	@Override
 	public String toString(){
-		return String.valueOf(score);
+		return String.valueOf(score)+"id:"+id;
 	}
 	public String getId() {
 		return id;

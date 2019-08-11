@@ -7,7 +7,7 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 import matt.{DependencyGraph, POI, SpatialObject}
 import matt.ca.BCAIndexProgressiveOneRound
-import matt.score.ScoreFunctionCount
+import matt.score.{ScoreFunctionCount, ScoreFunctionTotalScore}
 import matt.definitions.{Generic, GridIndexer}
 
 import scala.util.control.Breaks.{break, breakable}
@@ -21,7 +21,7 @@ object OnestepAlgo {
 
   def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, gridIndexer: GridIndexer): List[SpatialObject] = {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
-    val scoreFunction = new ScoreFunctionCount[POI]()
+    val scoreFunction = new ScoreFunctionTotalScore[POI]()
     val bcaFinder = new BCAIndexProgressiveOneRound(true, gridIndexer)
     bcaFinder.findBestCatchmentAreas(pois, eps, topk, scoreFunction).asInstanceOf[List[SpatialObject]]
   }

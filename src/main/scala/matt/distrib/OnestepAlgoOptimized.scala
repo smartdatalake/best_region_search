@@ -3,7 +3,7 @@ package matt.distrib
 import matt.ca.{BCAIndexProgressive, BCAIndexProgressiveOneRound}
 import matt.definitions.{Generic, GridIndexer}
 import matt.distrib.OnestepAlgo.oneStepAlgo
-import matt.score.ScoreFunctionCount
+import matt.score.{ScoreFunctionCount, ScoreFunctionTotalScore}
 import matt.{BorderResult, POI, SpatialObject}
 import org.apache.spark.rdd.RDD
 
@@ -19,7 +19,8 @@ object OnestepAlgoOptimized {
 
   def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, gridIndexer: GridIndexer): List[SpatialObject] = {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
-    val scoreFunction = new ScoreFunctionCount[POI]()
+   // val scoreFunction = new ScoreFunctionCount[POI]()
+    val scoreFunction = new ScoreFunctionTotalScore[POI]()
     val (inside, border) = dividePOIs(input, gridIndexer)
     val borderInfo = calBorderTop1(border, eps, gridIndexer).toList
     val bcaFinder = new BCAIndexProgressiveOneRound(true, gridIndexer)

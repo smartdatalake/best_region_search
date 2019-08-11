@@ -3,7 +3,7 @@ package matt.distrib
 
 import matt.ca.{BCAIndexProgressiveOneRound, BCAIndexProgressiveOneRoundRed}
 import matt.definitions.{Generic, GridIndexer}
-import matt.score.{OneStepResult, ScoreFunctionCount}
+import matt.score.{OneStepResult, ScoreFunctionCount, ScoreFunctionTotalScore}
 import matt.{DependencyGraph, POI, SpatialObject}
 import org.apache.spark.rdd.RDD
 
@@ -19,7 +19,7 @@ object OnestepAlgored {
 
   def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, gridIndexer: GridIndexer): (Int,OneStepResult) = {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
-    val scoreFunction = new ScoreFunctionCount[POI]()
+    val scoreFunction = new ScoreFunctionTotalScore[POI]()
     val bcaFinder = new BCAIndexProgressiveOneRoundRed(true, gridIndexer)
     (input._1,bcaFinder.findBestCatchmentAreas(pois,input._1, eps, topk, scoreFunction))
   }

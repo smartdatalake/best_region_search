@@ -4,14 +4,20 @@ import java.util.List;
 
 import matt.SpatialObject;
 
-public class ScoreFunctionTotalScore extends ScoreFunction<SpatialObject> {
+public class ScoreFunctionTotalScore<T extends SpatialObject> extends ScoreFunction<T>{
 
-	@Override
-	public double computeScore(List<SpatialObject> objects) {
+	//@Override
+	public double computeScore(List<T> objects,int start,int end) {
 		double totalScore = 0;
-		for (SpatialObject object : objects) {
-			totalScore += object.getScore();
+		for (int i=start;i<=end;i++) {
+			totalScore += objects.get(i).getScore();
 		}
 		return totalScore;
+	}
+
+
+	@Override
+	public double computeScore(List<T> objects) {
+		return -1;
 	}
 }
