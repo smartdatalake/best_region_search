@@ -45,10 +45,10 @@ object NstepAlgo {
     // println("\n");
     // println("Final Result in " + iteration + " iteration");
     // println("\n");
-    val out=Ans.sortBy(_.getScore).reverse
-    for (x <- out) {
-      println(x.getId+"     "+x.getScore);
-    }
+//    val out=Ans.sortBy(_.getScore).reverse
+//    for (x <- out) {
+//      println(x.getId+"     "+x.getScore);
+//    }
 
   }
   def localAnsReducer(a:List[SpatialObject],b:List[SpatialObject],Kprime:Int):List[SpatialObject]={

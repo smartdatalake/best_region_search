@@ -33,7 +33,7 @@ public class BCAIndexProgressiveOneRoundRed {
 	}
 
 
-	public OneStepResult findBestCatchmentAreas(List<POI> pois,int node, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction) {
+	public OneStepResult findBestCatchmentAreas(List<POI> pois, int node, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction) {
 		IsOptimized = false;
 		DependencyGraph dependencyGraph = new DependencyGraph(gridIndexer);
 		dependencyGraph.setPartNum(node);
@@ -42,24 +42,23 @@ public class BCAIndexProgressiveOneRoundRed {
 			t.setScore(0);
 			List<SpatialObject> topk = new ArrayList<SpatialObject>();
 			topk.add(t);
-			return new OneStepResult((int)(dependencyGraph.cornerA()._1),(int)(dependencyGraph.cornerA()._2),(int)(dependencyGraph.cornerB()._1),(int)(dependencyGraph.cornerB()._2), (List<SpatialObject>) dependencyGraph.getFinalResult().toList());
+			return new OneStepResult((int) (dependencyGraph.cornerALong()), (int) (dependencyGraph.cornerALat()), (int) (dependencyGraph.cornerBLong()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 		}
-		if (pois.size() > 5000) {
-			HashMap<String, POI> temp = new HashMap<>();
-			for (POI poi : pois) {
-				double x = myRound(poi.getPoint().getX(),1000);
-				double y =  myRound(poi.getPoint().getY(),1000);
-				if (temp.containsValue(x + ":" + y)) {
-					temp.get(x + ":" + y).increaseScore();
-				}
-				else
-					temp.put(x + ":" + y,poi);
-			}
-			System.err.println("before "+ pois.size());
-			System.err.println(temp.size());
-			pois=new ArrayList<>();
+		//	if (pois.size() > 5000) {
+		HashMap<String, POI> temp = new HashMap<>();
+		for (POI poi : pois) {
+			double x = poi.getPoint().getX();
+			double y = poi.getPoint().getY();
+			if (temp.containsValue(x + ":" + y)) {
+				temp.get(x + ":" + y).increaseScore();
+			} else
+				temp.put(x + ":" + y, poi);
+			//		}
+			//		System.err.println("before "+ pois.size());
+			//		System.err.println(temp.size());
+			pois = new ArrayList<>();
 			pois.addAll(temp.values());
-			System.err.println("after "+pois.size());
+			//		System.err.println("after "+pois.size());
 		}
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		Grid grid = new Grid(pois, eps);
@@ -72,7 +71,7 @@ public class BCAIndexProgressiveOneRoundRed {
 		}
 		//if(unsafeCNT>0)
 		//System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
-		return new OneStepResult((int)(dependencyGraph.cornerA()._1),(int)(dependencyGraph.cornerA()._2),(int)(dependencyGraph.cornerB()._1),(int)(dependencyGraph.cornerB()._2), (List<SpatialObject>) dependencyGraph.getFinalResult().toList());
+		return new OneStepResult((int) (dependencyGraph.cornerALong()), (int) (dependencyGraph.cornerALat()), (int) (dependencyGraph.cornerBLong()), (int) (dependencyGraph.cornerBLat()),  dependencyGraph.getFinalResult());
 	}
 
 	public OneStepResult findBestCatchmentAreas(List<POI> pois, SpatialObject left, SpatialObject up, SpatialObject Corner
@@ -101,7 +100,7 @@ public class BCAIndexProgressiveOneRoundRed {
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
 		System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
-		return new OneStepResult((int)(dependencyGraph.cornerA()._1),(int)(dependencyGraph.cornerA()._2),(int)(dependencyGraph.cornerB()._1),(int)(dependencyGraph.cornerB()._2), (List<SpatialObject>) dependencyGraph.getFinalResult().toList());
+		return new OneStepResult((int) (dependencyGraph.cornerALong()), (int) (dependencyGraph.cornerALat()), (int) (dependencyGraph.cornerBLong()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 	}
 
 	public Object findBestCatchmentAreas(List<POI> pois, List<BorderResult> border, int node, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction) {
@@ -155,9 +154,9 @@ public class BCAIndexProgressiveOneRoundRed {
 					}
 				}
 
-			//	block = new Block(cellPois, scoreFunction, Block.BLOCK_TYPE_CELL, Block.BLOCK_ORIENTATION_VERTICAL,
-			//			Block.EXPAND_NONE, eps, geometryFactory);
-				if(cellPois.size()>0) {
+				//	block = new Block(cellPois, scoreFunction, Block.BLOCK_TYPE_CELL, Block.BLOCK_ORIENTATION_VERTICAL,
+				//			Block.EXPAND_NONE, eps, geometryFactory);
+				if (cellPois.size() > 0) {
 					block = new Block(cellPois, scoreFunction, Block.BLOCK_TYPE_CELL, Block.BLOCK_ORIENTATION_VERTICAL,
 							Block.EXPAND_NONE, eps, geometryFactory, 0, cellPois.size() - 1);
 
@@ -182,7 +181,7 @@ public class BCAIndexProgressiveOneRoundRed {
 
 		// insert the two derived sub-blocks in the queue
 		//if ((block.type == Block.BLOCK_TYPE_SLAB || block.type == Block.BLOCK_TYPE_REGION) && block.pois.size() > 1) {
-		if ((block.type == Block.BLOCK_TYPE_SLAB || block.type == Block.BLOCK_TYPE_REGION) && (block.end-block.start+1) > 1) {
+		if ((block.type == Block.BLOCK_TYPE_SLAB || block.type == Block.BLOCK_TYPE_REGION) && (block.end - block.start + 1) > 1) {
 			Block[] derivedBlocks = block.getSubBlocks();
 			for (int i = 0; i < derivedBlocks.length; i++) {
 				queue.add(derivedBlocks[i]);
@@ -262,11 +261,10 @@ public class BCAIndexProgressiveOneRoundRed {
 		// generate candidate result
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
-		SpatialObject candidate=new SpatialObject();
+		SpatialObject candidate = new SpatialObject();
 		try {
 			candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, block.utilityScore, geometryFactory.toGeometry(e));
-		}
-		catch (Exception o){
+		} catch (Exception o) {
 			System.out.println(block);
 		}
 		if (duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type)) {
@@ -301,11 +299,11 @@ public class BCAIndexProgressiveOneRoundRed {
 	}
 
 	@SuppressWarnings("unused")
-/*	private void removeOverlappingPoints(Block block, List<SpatialObject> topk) {
-		*//*
-		 * Check if any existing results overlap with this block. If so, remove common
-		 * points.
-		 *//*
+	/*	private void removeOverlappingPoints(Block block, List<SpatialObject> topk) {
+	 *//*
+	 * Check if any existing results overlap with this block. If so, remove common
+	 * points.
+	 *//*
 		List<SpatialObject> overlappingResults = new ArrayList<SpatialObject>(topk);
 		Envelope border = block.envelope;
 		overlappingResults.removeIf(p -> !border.intersects(p.getGeometry().getEnvelopeInternal()));
@@ -324,6 +322,6 @@ public class BCAIndexProgressiveOneRoundRed {
 	}
 
 	public static int myRound(double n, double resolution) { // use 1000, 5000
-		return (int) (n*resolution);
+		return (int) (n * resolution);
 	}
 }

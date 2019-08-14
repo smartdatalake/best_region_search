@@ -1,17 +1,21 @@
 package matt.score;
 
 import matt.SpatialObject;
+import scala.collection.immutable.List;
+import scala.collection.mutable.ListBuffer;
 
-import java.util.List;
+import java.io.Serializable;
+import java.util.ArrayList;
 
-public class OneStepResult {
+
+public class OneStepResult implements Serializable {
     public int cornerALong, cornerALat, cornerBLong, cornerBLat;
     public List<SpatialObject> spatialObjects;
 
     public OneStepResult() {
     }
 
-    public OneStepResult(int cornerALong, int cornerALat, int cornerBLong, int cornerBLat, List spatialObjects) {
+    public OneStepResult(int cornerALong, int cornerALat, int cornerBLong, int cornerBLat, List<SpatialObject> spatialObjects) {
         this.cornerALong = cornerALong;
         this.cornerALat = cornerALat;
         this.cornerBLong = cornerBLong;

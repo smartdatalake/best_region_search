@@ -33,10 +33,10 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 													  ScoreFunctionTotalScore<POI> scoreFunction, List<SpatialObject> previous) {
 		long time = System.nanoTime();
 		boolean timed = false;
-		if (pois.size() > 5000) {
-			System.err.println("poi# in a partition " + pois.size() + " on location around   " + pois.get(0).getPoint().getX() + ":" + pois.get(0).getPoint().getY());
-			timed = true;
-		}
+	//	if (pois.size() > 5000) {
+	//		System.err.println("poi# in a partition " + pois.size() + " on location around   " + pois.get(0).getPoint().getX() + ":" + pois.get(0).getPoint().getY());
+	//		timed = true;
+	//	}
 		HashMap<String, POI> temp = new HashMap<>();
 		for (POI poi : pois) {
 			double x = poi.getPoint().getX();
@@ -46,13 +46,13 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			} else
 				temp.put(x + ":" + y, poi);
 
-					System.err.println("before "+ pois.size());
-					System.err.println(temp.size());
+	//				System.err.println("before "+ pois.size());
+	//				System.err.println(temp.size());
 			pois = new ArrayList<>();
 			pois.addAll(temp.values());
-					System.err.println("after "+pois.size());
+	//				System.err.println("after "+pois.size());
 		}
-			System.err.println("Now start with pois# "+ pois.size());
+	//		System.err.println("Now start with pois# "+ pois.size());
 		List<SpatialObject> topk = new ArrayList<SpatialObject>();
 		if (pois.size() == 0) {
 			SpatialObject t = new SpatialObject();
@@ -77,8 +77,8 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			t.setScore(0);
 			topk.add(t);
 		}
-		if (timed)
-			System.err.println(" time" + TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - time)));
+	//	if (timed)
+	//		System.err.println(" time" + TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - time)));
 		return topk;
 	}
 

@@ -29,12 +29,11 @@ object OnestepAlgored {
     this.topK = topk
     this.gridIndexer=gridIndexer
     val Ans = ListBuffer[SpatialObject]()
-/*    val localAnswers = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer)).map(x=>mapper(x._1,x._2,base)).groupByKey().map()
-      .collect().toList.sortBy(_.getScore).reverse
+   val localAnswers = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer)).map(x=>mapper(x._1,x._2,base)).groupByKey().map(x=>reducer(x._1,x._2)).collect()
      println("***********************************************************************************************************************************")
      println(localAnswers.size)
     var pos = 0
-    while (Ans.size < topk && pos != localAnswers.size) {
+    /*while (Ans.size < topk && pos != localAnswers.size) {
       if (!Generic.intersectsList(localAnswers.get(pos), Ans))
         Ans.add(localAnswers.get(pos))
       pos += 1
@@ -74,7 +73,9 @@ object OnestepAlgored {
     var cornerALat = 2000000000
     var cornerBLong = -10
     var cornerBLat = -10
-    val output:OneStepResult=new OneStepResult()
+    val safe: OneStepResult = new OneStepResult()
+    val unsafe: OneStepResult = new OneStepResult()
+
     results.foreach(x => {
       if (x.cornerALong < cornerALong) cornerALong = x.cornerALong
       if (x.cornerALat < cornerALat) cornerALat = x.cornerALat
@@ -83,43 +84,25 @@ object OnestepAlgored {
     })
     var candidates = new ListBuffer[SpatialObject]
     results.foreach(x => candidates.addAll(x.spatialObjects))
-    candidates=candidates.sortBy(_.getScore).reverse
-    var pos=0
-    var safe=0
-    while(safe<=topK && pos < candidates.size){
-      val instance =candidates.get(pos)
-      val (cellI,cellJ)=gridIndexer.getCellIndex(instance.getGeometry.getCoordinates.toList(1).x.toFloat
-        , instance.getGeometry.getCoordinates.toList(1).y.toFloat)
-      if(cellI==cornerALong || cellI==cornerBLong || cellJ==cornerALat||cellJ==cornerBLat)
-        output.spatialObjects.add(instance)
-      else if(!Generic.intersectsList(instance, output.spatialObjects.asInstanceOf[ListBuffer[SpatialObject]])) {
-        output.spatialObjects.add(instance)
-        safe += 1
-      }
-      pos+=1
-    }
-    output.cornerALong = cornerALong
-    output.cornerALat =  cornerALat
-    output.cornerBLong = cornerBLong
-    output.cornerBLat = cornerBLat
-    (index,output)
-  }
- // def reducer()
- /*   var temp1 = new ListBuffer[SpatialObject]()
-    temp1.addAll(a.toList)
-    temp1.addAll(b.toList)
-    temp1 = temp1.sortBy(_.getScore).reverse
-    val reduceAnswer = new ListBuffer[SpatialObject]()
-
+    candidates = candidates.sortBy(_.getScore).reverse
     var pos = 0
-    breakable {
-      while (reduceAnswer.size <= topK && pos < temp1.size) {
-        if (!Generic.intersectsList(temp1.get(pos), reduceAnswer)) {
-          reduceAnswer += temp1.get(pos);
-        }
-        pos += 1
-      }
+    while (safe.spatialObjects.size() <= topK && pos < candidates.size) {
+      val instance = candidates.get(pos)
+      val (cellI, cellJ) = gridIndexer.getCellIndex(instance.getGeometry.getCoordinates.toList(1).x.toFloat
+        , instance.getGeometry.getCoordinates.toList(1).y.toFloat)
+      if (cellI == cornerALong || cellI == cornerBLong || cellJ == cornerALat || cellJ == cornerBLat)
+        unsafe.spatialObjects.add(instance)
+      else if (Generic.intersectsList(instance, unsafe.spatialObjects.asInstanceOf[ListBuffer[SpatialObject]]))
+        unsafe.spatialObjects.add(instance)
+      else if (!Generic.intersectsList(instance, safe.spatialObjects.asInstanceOf[ListBuffer[SpatialObject]]))
+        safe.spatialObjects.add(instance)
     }
-    return reduceAnswer.toList
-  }*/
+    safe.cornerALong = cornerALong
+    safe.cornerALat = cornerALat
+    safe.cornerBLong = cornerBLong
+    safe.cornerBLat = cornerBLat
+    safe.spatialObjects.addAll(unsafe.spatialObjects)
+    (index, safe)
+  }
+
 }

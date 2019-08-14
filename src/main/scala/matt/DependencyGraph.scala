@@ -6,45 +6,51 @@ import scala.collection.mutable
 import collection.mutable.{HashMap, ListBuffer, MultiMap, Set}
 
 class DependencyGraph (gridIndexer: GridIndexer) {
-  val indexToSpatialObj = new HashMap[(Int, Int), (SpatialObject,ListBuffer[SpatialObject])]
- // val indexToSpatialObjSafe = new HashMap[(Int, Int), Set[SpatialObject]] with MultiMap[(Int, Int), SpatialObject]
- // val indexToSpatialObjUnsafe = new HashMap[(Int, Int), Set[SpatialObject]] with MultiMap[(Int, Int), SpatialObject]
+  val indexToSpatialObj = new HashMap[(Int, Int), (SpatialObject, ListBuffer[SpatialObject])]
+  // val indexToSpatialObjSafe = new HashMap[(Int, Int), Set[SpatialObject]] with MultiMap[(Int, Int), SpatialObject]
+  // val indexToSpatialObjUnsafe = new HashMap[(Int, Int), Set[SpatialObject]] with MultiMap[(Int, Int), SpatialObject]
   val indexToSpatialObjM = new HashMap[(Int, Int), Set[SpatialObject]] with MultiMap[(Int, Int), SpatialObject]
   val indexToDependentNeighborCell = new mutable.HashSet[(Int, Int)]()
   val duplicate = new mutable.HashSet[String]
   var partition = -1
   var safeRegionCnt: Int = 0
-var cornerA=(-1,-1)
-  var cornerB=(-1,-1)
-  def setPartNum(a:Int)={
-    partition=a
-    val (nodeI,nodeJ)=gridIndexer.getNodeIndex(a)
-    cornerA=(nodeI*gridIndexer.gridSizePerCell,nodeJ*gridIndexer.gridSizePerCell)
-    cornerB=(cornerA._1+gridIndexer.gridSizePerCell-1,cornerA._2+gridIndexer.gridSizePerCell-1)
+  var cornerALong = -1
+  var cornerALat = -1
+  var cornerBLong = -1
+  var cornerBLat = -1
+
+  def setPartNum(a: Int) = {
+    partition = a
+    val (nodeI, nodeJ) = gridIndexer.getNodeIndex(a)
+    cornerALong = nodeI * gridIndexer.gridSizePerCell
+    cornerALat=nodeJ * gridIndexer.gridSizePerCell
+    cornerBLong = cornerALong + gridIndexer.gridSizePerCell - 1
+    cornerBLat= cornerALat + gridIndexer.gridSizePerCell - 1
   }
+
   def increaseSafeCNT() = {
     safeRegionCnt += 1
   }
 
   def addSafeRegion(spatialObject: SpatialObject): Unit = {
-    val (cellI,cellJ)=gridIndexer.getCellIndex(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
+    val (cellI, cellJ) = gridIndexer.getCellIndex(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
       , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
-    val t= indexToSpatialObj.get((cellI,cellJ)).getOrElse(new SpatialObject, new ListBuffer[ SpatialObject])
-    indexToSpatialObj.+=(((cellI,cellJ),(spatialObject,t._2)))
+    val t = indexToSpatialObj.get((cellI, cellJ)).getOrElse(new SpatialObject, new ListBuffer[SpatialObject])
+    indexToSpatialObj.+=(((cellI, cellJ), (spatialObject, t._2)))
     safeRegionCnt += 1
   }
 
   def addUnsafeRegion(spatialObject: SpatialObject): Unit = {
-    val (cellI,cellJ)=gridIndexer.getCellIndex(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
+    val (cellI, cellJ) = gridIndexer.getCellIndex(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
       , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
-    var t= indexToSpatialObj.get((cellI,cellJ)).getOrElse(null, null)
-    if(t==(null,null)) {
+    var t = indexToSpatialObj.get((cellI, cellJ)).getOrElse(null, null)
+    if (t == (null, null)) {
       val p = new ListBuffer[SpatialObject];
       p += spatialObject
       indexToSpatialObj.+=(((cellI, cellJ), (null, p)))
     }
     else {
-      t._2.+=( spatialObject)
+      t._2.+=(spatialObject)
       indexToSpatialObj.+=(((cellI, cellJ), (null, t._2)))
     }
   }
@@ -62,15 +68,15 @@ var cornerA=(-1,-1)
       indexToDependentNeighborCell.add(obj)
   }
 
-  def overlapCon(spatialObject: SpatialObject):Int= {
+  def overlapCon(spatialObject: SpatialObject): Int = {
     val (cellI, cellJ) = gridIndexer.getCellIndex(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
       , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
     var safe = false
     var unsafe = false
     for (i <- -1 to 1)
       for (j <- -1 to 1) {
-        var t = indexToSpatialObj.get((cellI + i, cellJ + j)).getOrElse(null,null)
-        if(t!=(null,null)) {
+        var t = indexToSpatialObj.get((cellI + i, cellJ + j)).getOrElse(null, null)
+        if (t != (null, null)) {
           if (t != null && t._1 != null && Generic.intersects(spatialObject, t._1))
             safe = true
           if (t != null && t._2 != null && Generic.intersectsList(spatialObject, t._2))
@@ -85,7 +91,6 @@ var cornerA=(-1,-1)
       return 2
     return 0
   }
-
 
 
   def IsOverlapM(spatialObject: SpatialObject): Boolean = {
@@ -120,8 +125,8 @@ var cornerA=(-1,-1)
   }
 
   def getFinalResult(): List[SpatialObject] = {
-    val t=new ListBuffer[SpatialObject]
-    for(p<-indexToSpatialObj) {
+    val t = new ListBuffer[SpatialObject]
+    for (p <- indexToSpatialObj) {
       if (p._2._1 != null)
         t.+=(p._2._1)
       if (p._2._2 != null)
@@ -131,7 +136,7 @@ var cornerA=(-1,-1)
     return t.toList
   }
 
-/*  override def toString(): String = {
+  /*  override def toString(): String = {
     val safeCNT = indexToSpatialObjSafe.values.size;
     val UnsafeCNT = indexToSpatialObjUnsafe.values.size;
     val M_CNT = indexToSpatialObjM.values.size
