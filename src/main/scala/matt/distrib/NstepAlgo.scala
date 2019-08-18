@@ -15,30 +15,46 @@ import matt.score.{ScoreFunctionCount, ScoreFunctionTotalScore}
 import matt.definitions.{Generic, GridIndexer}
 
 object NstepAlgo {
-
-  def localAlgo(input:  Iterable[POI], eps: Double, topk: Int, finalAnswers: List[SpatialObject],gridIndexer: GridIndexer): List[SpatialObject] = {
+  val base=8
+  def localAlgo(index:Int,input:  Iterable[POI], eps: Double, topk: Int, finalAnswers: List[SpatialObject],gridIndexer: GridIndexer): (Int,List[SpatialObject]) = {
    // val scoreFunction = new ScoreFunctionCount[POI]();
     val scoreFunction = new ScoreFunctionTotalScore[POI]();
     val distinct = true;
     val bcaFinder = new BCAIndexProgressive(distinct,gridIndexer);
-    return bcaFinder.findBestCatchmentAreas(input.toList, eps, topk, scoreFunction, finalAnswers).toList;
+    return (index,bcaFinder.findBestCatchmentAreas(input.toList, eps, topk, scoreFunction, finalAnswers).toList);
   }
 
   def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int,gridIndexer: GridIndexer) {
     var Ans = List[SpatialObject]();
     var iteration = 0;
     val Kprime = K;
-
+    println(roundUp(math.log(gridIndexer.width) / math.log(base)))
     while (Ans.length < K) {
       println("Current Iteration: " + iteration);
       // calculate the local results at each node.
-      val resultRegionOfRound = nodeToPoint.groupByKey().map(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans,gridIndexer )).reduce((a,b)=>localAnsReducer(a,b,Kprime)).sortBy(_.getScore).reverse;
+     // val resultRegionOfRound = nodeToPoint.groupByKey().map(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans,gridIndexer )).reduce((a,b)=>localAnsReducer(a,b,Kprime)).sortBy(_.getScore).reverse;
+
+      var lvl = 1;
+      var rdds: Array[RDD[(Int, List[SpatialObject])]] = new Array[RDD[(Int, List[SpatialObject])]](base * roundUp(math.log(gridIndexer.width) / math.log(base)) + 1)
+      rdds(0) = nodeToPoint.groupByKey().map(x => localAlgo(x._1,x._2, eps,  Math.min(Kprime, K - Ans.size),Ans, gridIndexer))
+      while (lvl <= roundUp(math.log(gridIndexer.width) / math.log(base))) {
+        rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, Kprime))
+        rdds(lvl).cache()
+        println(lvl + ":::" + rdds(lvl).count())
+        //  rdds(lvl).collect().foreach(x=>x._2.spatialObjects.foreach(x => println(x.getId + ":::::::" + x.getScore)))
+        // rdds(lvl-1)=null
+        lvl += 1
+      }
+
       /////take Kprime acceptable regions from current round answers as "roundAnswers"
       ////////////////////////////////
       ///////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////
-      System.err.println(resultRegionOfRound)
-      Ans = Ans.++(resultRegionOfRound);
+      val finalResult = rdds(lvl - 1).map(x => x._2).collect().toList.get(0)
+      finalResult.asInstanceOf[List[SpatialObject]].foreach(x => System.err.println(x.getId + ":::::::" + x.getScore))
+      //System.err.println(finalResult.sortBy(_.getScore).reverse)
+    //  System.err.println(finalResult)
+      Ans = Ans.++(finalResult);
       iteration = iteration + 1;
     }
 
@@ -78,6 +94,46 @@ object NstepAlgo {
       }
     }
     return roundAnswers.toList
+  }
+  def mapper(index: Int, result: List[SpatialObject], gridIndexer: GridIndexer, lvl: Int): (Int, List[SpatialObject]) = {
+    val (nodeI, nodeJ) = ((index - 1) % width(lvl - 1, gridIndexer), ((index - 1) / width(lvl - 1, gridIndexer).asInstanceOf[Double]).toInt)
+    ((nodeI / base).toInt + (nodeJ / base).toInt * width(lvl, gridIndexer) + 1, result)
+  }
+  def reducer(index: Int, results: Iterable[List[SpatialObject]], gridIndexer: GridIndexer, Kprime: Int): (Int, List[SpatialObject]) = {
+var maxMin=0.0
+    var minlocal=200000.0
+//    results.toList.foreach(x=>x.tail.get(0).getScore)
+    var candidates = new ListBuffer[SpatialObject]
+    results.foreach(x=>{
+      minlocal=1000000.0
+      x.foreach(x=>if(x.getScore<minlocal) minlocal = x.getScore())
+      candidates.addAll(x)
+      if(maxMin<minlocal)
+        maxMin=minlocal
+    })
+    candidates = candidates.sortBy(_.getScore).reverse
+    var pos=0
+    val roundAnswers=new ListBuffer[SpatialObject]()
+    breakable {
+      while (pos < Kprime&&pos<candidates.size) {
+        if (candidates.get(pos).getScore<maxMin || Generic.intersectsList(candidates.get(pos), roundAnswers)) {
+          break;
+        } else {
+          val temp = candidates.get(pos);
+          roundAnswers += temp;
+        }
+        pos += 1
+      }
+    }
+    (index, roundAnswers.toList)
+  }
+  def roundUp(d: Double) = math.ceil(d).toInt
+
+  def width(lvl: Int, gridIndexer: GridIndexer): Int = {
+    var width = gridIndexer.width
+    for (i <- 1 to lvl)
+      width = roundUp(width / base.asInstanceOf[Double])
+    return width
   }
 }
 /*

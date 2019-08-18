@@ -1,10 +1,8 @@
 package matt.mains
 import java.util
-import java.util.{ArrayList, HashMap}
 
 import matt.POI
 
-import scala.math.pow
 import org.apache.spark.sql.SparkSession
 import matt.definitions.GridIndexer
 import org.locationtech.jts.geom.{GeometryFactory, PrecisionModel}
@@ -15,13 +13,10 @@ import org.apache.log4j.Logger
 import org.apache.log4j.Level
 import org.apache.spark.storage.StorageLevel
 
-import scala.collection.mutable.ListBuffer
 
 object Run {
  def main(args: Array[String]) {
-  System.out.println("*-------------------------------------------------------------------------------------------------")
-  System.out.println("-------------------------------------------------------------------------------------------------")
-  System.out.println("-------------------------------------------------------------------------------------------------")
+  System.out.println("******START-------------------------------------------------------------------------------------------------")
   ///////Param & Config
   //////////////////////////
   Logger.getLogger("org").setLevel(Level.OFF)
@@ -47,14 +42,11 @@ object Run {
   hadoopConfig.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
   val poiInputFile1 = "~/osmpois-planet-cleaned.csv";
   val poiInputFile = "/home/hamid/8" + ".csv";
-  val poiInputFile6565 = "/home/hamid/reducedFlickr.csv";
-  val poiInputFile3 = "/home/hamid/input.csv";
 
   val topk = args(0).toInt;
   val eps = args(1).toDouble
   val cores = args(2).toInt
   val algo=args(3).toInt
-  val decayConstant = 0.7
 
 
   //////end Param & config
@@ -83,33 +75,15 @@ object Run {
 
 
   // find to which node does each point belongs to : (NodeNo,Row)
-  val dataSize = math.max((minmaxLat._2 - minmaxLat._1), (minmaxLong._2 - minmaxLong._1))
-  val cellSize = eps.asInstanceOf[Double]
-  val dataSizePerCell = math.floor(dataSize / cellSize.asInstanceOf[Double]).toInt
   val width = math.sqrt(cores).toInt
-  // val width = math.ceil(dataSizePerCell / 50).toInt
   val gridIndexer = new GridIndexer(width, eps, minmaxLong, minmaxLat)
   println("partition per cell:" + gridIndexer.gridSizePerCell)
   val geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
   val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer));
   nodeToPoint.persist(StorageLevel.MEMORY_AND_DISK);
-  //  println(nodeToPoint.groupByKey().map(x=>mergeStat(x._2)).reduce((a,b)=>a+b))
-  // nodeToPoint.map(x=>gridIndexer.getCellIndex(x._2.getPoint.getX,x._2.getPoint.getY)).groupBy(l => l).map(t => (t._1, t._2.toList.size)).filter(x=>x._2>1000).foreach(println)
-
-  ////////End Read & split data poi to each worker
-  //////////////////////////////////////////////////////////////////////////////
-  // println("10,000:"+nodeToPoint.groupByKey().map(x=>mergeStat(x._2)).reduce((a,b)=>a+b))
-  // println("1,000:"+nodeToPoint.groupByKey().map(x=>RoundStat(x._1,x._2,1000)).reduce((a,b)=>(a._1+b._1,a._2+b._2)))
-  // println("100:"+nodeToPoint.groupByKey().map(x=>RoundStat(x._1,x._2,100)).reduce((a,b)=>(a._1+b._1,a._2+b._2)))
-  // println("10:"+nodeToPoint.groupByKey().map(x=>RoundStat(x._1,x._2,10)).reduce((a,b)=>(a._1+b._1,a._2+b._2)))
 
   ///////Start
   //////////////////////////////
-  val Nstep = true;
-  val NstepApp = false;
-  val Nstep2 = false
-  val OneStep = false;
-  val OneStepOptimized = false
 
   if (algo==0) {
    val t = System.nanoTime()
@@ -133,26 +107,17 @@ object Run {
   if (algo==2) {
    val t = System.nanoTime()
    val nodeOptToPoint = inputData.rdd.flatMap(x => Generic.poiOptToKeyValue(x, geometryFactory, gridIndexer));
-   matt.distrib.OnestepAlgoOptimized.Run(nodeOptToPoint, eps, decayConstant, topk, gridIndexer)
+   matt.distrib.OnestepAlgoOptimized.Run(nodeOptToPoint, eps,  topk, gridIndexer)
    println("SingleOpt:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
    println("-----------------------------------------------------------------------------------------------------------------------------")
    println("-----------------------------------------------------------------------------------------------------------------------------")
   }
-  /* if (Nstep2) {
-   matt.distrib.NstepAlgo2.Run(nodeToPoint, eps, topk, width)
-  }*/
-
   if (algo==3) {
    var t = System.nanoTime()
-  // println("Single:::       eps:" + eps + "       topk:" + topk + "     cores:" + cores)
-   // matt.distrib.OnestepAlgo.Run(nodeToPoint, eps, topk, gridIndexer);
-  // println("Single:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
-   println("-----------------------------------------------------------------------------------------------------------------------------")
-   println("-----------------------------------------------------------------------------------------------------------------------------")
-   t = System.nanoTime()
    matt.distrib.OnestepAlgoReduce.Run(nodeToPoint, eps, topk, gridIndexer);
    println("Single:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
-
+   println("-----------------------------------------------------------------------------------------------------------------------------")
+   println("-----------------------------------------------------------------------------------------------------------------------------")
   }
 
   spark.stop()
@@ -169,9 +134,6 @@ object Run {
   temp.size()
  }
 
- def myRound(n: Double, resolution: Double): Int = { // use 1000, 5000
-  (n * resolution).toInt
- }
 
  def RoundStat(part: Int, pois: Iterable[POI], round: Int): (Int, Int) = {
   if (pois.size > 5000)
@@ -187,6 +149,5 @@ object Run {
   (pois.size, temp.size())
  }
 
- def roundUp(d: Double) = math.ceil(d).toInt
 
 }

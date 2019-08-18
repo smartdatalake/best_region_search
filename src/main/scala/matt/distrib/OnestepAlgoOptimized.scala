@@ -37,7 +37,7 @@ object OnestepAlgoOptimized {
     return (input._1, bcaFinder.findBestCatchmentAreas(pois, eps, 1, scoreFunction).get(0))
   }
 
-  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, decayConstant: Double, topk: Int, gridIndexer: GridIndexer) {
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer) {
 
     this.topK=topk
     val Ans = ListBuffer[SpatialObject]()
