@@ -4,6 +4,8 @@ import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import matt.definitions.Generic;
+import matt.definitions.GridIndexer;
 import matt.score.ScoreFunctionTotalScore;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -16,12 +18,15 @@ import matt.score.ScoreFunction;
 public class BCAIndexProgressive extends BCAFinder<POI> {
 
 	private HashSet<String> duplicate = new HashSet<>();
+	private HashMap<String,SpatialObject> topKIndex = new HashMap<>();
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
+	private GridIndexer gridIndexer;
 
-	public BCAIndexProgressive(boolean distinctMode) {
+	public BCAIndexProgressive(boolean distinctMode, GridIndexer gridIndexer) {
 		super();
 		this.distinctMode = distinctMode;
+		this.gridIndexer=gridIndexer;
 	}
 
 	@Override
@@ -31,7 +36,13 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 
 	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k,
 													  ScoreFunctionTotalScore<POI> scoreFunction, List<SpatialObject> previous) {
+
 		long time = System.nanoTime();
+		for (SpatialObject spatialObject: previous ) {
+			topKIndex.put((gridIndexer.getCellIndex(spatialObject.getGeometry().getCoordinates()[1].x
+					, spatialObject.getGeometry().getCoordinates()[1].y)._1().toString()+":"+gridIndexer.getCellIndex(spatialObject.getGeometry().getCoordinates()[1].x
+					, spatialObject.getGeometry().getCoordinates()[1].y)._2().toString()),spatialObject);
+		}
 		boolean timed = false;
 	//	if (pois.size() > 5000) {
 	//		System.err.println("poi# in a partition " + pois.size() + " on location around   " + pois.get(0).getPoint().getX() + ":" + pois.get(0).getPoint().getY());
@@ -169,31 +180,33 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			return;
 		if (block.envelope.centre() == null)
 			return;
-		if (duplicate.contains(myRound(block.envelope.centre().x,10000) + ":" + myRound(block.envelope.centre().y,10000) + ":" + block.type)) {
+		if (duplicate.contains(myRound(block.envelope.centre().x, 10000) + ":" + myRound(block.envelope.centre().y, 10000) + ":" + block.type)) {
 			block.type = Block.EXPAND_NONE;
 			return;
 		} else
-			duplicate.add(myRound(block.envelope.centre().x,10000) + ":" + myRound(block.envelope.centre().y,10000) + ":" + block.type);
-
+			duplicate.add(myRound(block.envelope.centre().x, 10000) + ":" + myRound(block.envelope.centre().y, 10000) + ":" + block.type);
+		SpatialObject result = new SpatialObject(block.envelope.centre().y + "," + block.envelope.centre().x, block.relevanceScore, geometryFactory.toGeometry(e));
 		// if this result is valid, add it to top-k
 		boolean isDistinct = true;
-		if (distinctMode) {
-			for (SpatialObject so : topk) {
-				if (e.intersects(so.getGeometry().getEnvelopeInternal())) {
+		int cellI = Integer.parseInt(gridIndexer.getCellIndex(result.getGeometry().getCoordinates()[1].x
+				, result.getGeometry().getCoordinates()[1].y)._1().toString());
+		int cellJ = Integer.parseInt(gridIndexer.getCellIndex(result.getGeometry().getCoordinates()[1].x
+				, result.getGeometry().getCoordinates()[1].y)._2().toString());
+		for (int i = -1; i <= 1; i++) {
+			for (int j = -1; j <= 1; j++) {
+				SpatialObject t = topKIndex.getOrDefault(((cellI + i) + ":" + (cellJ + j)), null);
+				if (t != null && Generic.intersects(result, t)) {
 					isDistinct = false;
-					break;
-				}
-			}
-			for (SpatialObject so : previous) {
-				if (e.intersects(so.getGeometry().getEnvelopeInternal())) {
-					isDistinct = false;
-					break;
 				}
 			}
 		}
 		if (isDistinct) {
-			SpatialObject result = new SpatialObject( block.envelope.centre().y+","+block.envelope.centre().x ,  block.relevanceScore, geometryFactory.toGeometry(e));
-			topk.add(result);
+			if (result.getGeometry() != null) {
+				topk.add(result);
+				topKIndex.put((gridIndexer.getCellIndex(result.getGeometry().getCoordinates()[1].x
+						, result.getGeometry().getCoordinates()[1].y)._1().toString() + ":" + gridIndexer.getCellIndex(result.getGeometry().getCoordinates()[1].x
+						, result.getGeometry().getCoordinates()[1].y)._2().toString()), result);
+			}
 		}
 	}
 

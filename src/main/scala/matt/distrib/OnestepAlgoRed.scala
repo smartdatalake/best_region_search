@@ -76,12 +76,7 @@ object OnestepAlgored {
     val safe: OneStepResult = new OneStepResult()
     val unsafe: OneStepResult = new OneStepResult()
 
-    results.foreach(x => {
-      if (x.cornerALong < cornerALong) cornerALong = x.cornerALong
-      if (x.cornerALat < cornerALat) cornerALat = x.cornerALat
-      if (x.cornerBLong > cornerBLong) cornerBLong = x.cornerBLong
-      if (x.cornerBLat > cornerBLat) cornerBLat = x.cornerBLat
-    })
+
     var candidates = new ListBuffer[SpatialObject]
     results.foreach(x => candidates.addAll(x.spatialObjects))
     candidates = candidates.sortBy(_.getScore).reverse
@@ -97,9 +92,8 @@ object OnestepAlgored {
       else if (!Generic.intersectsList(instance, safe.spatialObjects.asInstanceOf[ListBuffer[SpatialObject]]))
         safe.spatialObjects.add(instance)
     }
-    safe.cornerALong = cornerALong
-    safe.cornerALat = cornerALat
-    safe.cornerBLong = cornerBLong
+    safe.countUnsafe = cornerALat
+    safe.index = cornerBLong
     safe.cornerBLat = cornerBLat
     safe.spatialObjects.addAll(unsafe.spatialObjects)
     (index, safe)

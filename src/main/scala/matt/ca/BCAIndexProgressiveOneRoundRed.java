@@ -42,7 +42,7 @@ public class BCAIndexProgressiveOneRoundRed {
 			t.setScore(0);
 			List<SpatialObject> topk = new ArrayList<SpatialObject>();
 			topk.add(t);
-			return new OneStepResult((int) (dependencyGraph.cornerALong()), (int) (dependencyGraph.cornerALat()), (int) (dependencyGraph.cornerBLong()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
+			return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 		}
 		//	if (pois.size() > 5000) {
 		HashMap<String, POI> temp = new HashMap<>();
@@ -71,7 +71,7 @@ public class BCAIndexProgressiveOneRoundRed {
 		}
 		//if(unsafeCNT>0)
 		//System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
-		return new OneStepResult((int) (dependencyGraph.cornerALong()), (int) (dependencyGraph.cornerALat()), (int) (dependencyGraph.cornerBLong()), (int) (dependencyGraph.cornerBLat()),  dependencyGraph.getFinalResult());
+		return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 	}
 
 	public OneStepResult findBestCatchmentAreas(List<POI> pois, SpatialObject left, SpatialObject up, SpatialObject Corner
@@ -99,8 +99,8 @@ public class BCAIndexProgressiveOneRoundRed {
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
-		System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
-		return new OneStepResult((int) (dependencyGraph.cornerALong()), (int) (dependencyGraph.cornerALat()), (int) (dependencyGraph.cornerBLong()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
+	//	System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
+		return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 	}
 
 	public Object findBestCatchmentAreas(List<POI> pois, List<BorderResult> border, int node, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction) {

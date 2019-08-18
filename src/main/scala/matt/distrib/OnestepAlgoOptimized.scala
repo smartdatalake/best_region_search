@@ -27,11 +27,11 @@ object OnestepAlgoOptimized {
     bcaFinder.findBestCatchmentAreas(inside,borderInfo,input._1, eps, topk, scoreFunction).asInstanceOf[List[SpatialObject]]
   }
 
-  def Top1BorderAlgo(input: ((Int, Int), Iterable[POI]), eps: Double): ((Int, Int), SpatialObject) = {
+  def Top1BorderAlgo(input: ((Int, Int), Iterable[POI]), eps: Double,gridIndexer: GridIndexer): ((Int, Int), SpatialObject) = {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
     val scoreFunction = new ScoreFunctionCount[POI]();
     val distinct = true;
-    val bcaFinder = new BCAIndexProgressive(distinct);
+    val bcaFinder = new BCAIndexProgressive(distinct,gridIndexer);
     val spatialObject=new SpatialObject();
     spatialObject.setScore(0)
     return (input._1, bcaFinder.findBestCatchmentAreas(pois, eps, 1, scoreFunction).get(0))
@@ -126,7 +126,7 @@ object OnestepAlgoOptimized {
 
   def calBorderTop1(poisInCell: HashMap[(Int, Int), ListBuffer[POI]], eps: Double, gridIndexer: GridIndexer): ListBuffer[BorderResult] = {
     val scoreFunction = new ScoreFunctionCount[POI]();
-    val bcaFinder = new BCAIndexProgressive(true);
+    val bcaFinder = new BCAIndexProgressive(true,gridIndexer);
     val output = new ListBuffer[BorderResult]
     for (((cellInI, cellInJ), pois) <- poisInCell) {
       if (cellInI == -1 || cellInI == gridIndexer.gridSizePerCell || cellInJ == -1 || cellInI == gridIndexer.gridSizePerCell) {

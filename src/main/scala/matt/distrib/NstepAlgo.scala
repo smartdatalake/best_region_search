@@ -12,19 +12,19 @@ import matt.POI
 import matt.SpatialObject
 import matt.ca.BCAIndexProgressive
 import matt.score.{ScoreFunctionCount, ScoreFunctionTotalScore}
-import matt.definitions.Generic
+import matt.definitions.{Generic, GridIndexer}
 
 object NstepAlgo {
 
-  def localAlgo(input:  Iterable[POI], eps: Double, topk: Int, finalAnswers: List[SpatialObject]): List[SpatialObject] = {
+  def localAlgo(input:  Iterable[POI], eps: Double, topk: Int, finalAnswers: List[SpatialObject],gridIndexer: GridIndexer): List[SpatialObject] = {
    // val scoreFunction = new ScoreFunctionCount[POI]();
     val scoreFunction = new ScoreFunctionTotalScore[POI]();
     val distinct = true;
-    val bcaFinder = new BCAIndexProgressive(distinct);
+    val bcaFinder = new BCAIndexProgressive(distinct,gridIndexer);
     return bcaFinder.findBestCatchmentAreas(input.toList, eps, topk, scoreFunction, finalAnswers).toList;
   }
 
-  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int) {
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int,gridIndexer: GridIndexer) {
     var Ans = List[SpatialObject]();
     var iteration = 0;
     val Kprime = K;
@@ -32,7 +32,7 @@ object NstepAlgo {
     while (Ans.length < K) {
       println("Current Iteration: " + iteration);
       // calculate the local results at each node.
-      val resultRegionOfRound = nodeToPoint.groupByKey().map(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans)).reduce((a,b)=>localAnsReducer(a,b,Kprime)).sortBy(_.getScore).reverse;
+      val resultRegionOfRound = nodeToPoint.groupByKey().map(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans,gridIndexer )).reduce((a,b)=>localAnsReducer(a,b,Kprime)).sortBy(_.getScore).reverse;
       /////take Kprime acceptable regions from current round answers as "roundAnswers"
       ////////////////////////////////
       ///////////////////////////////////////////////////////////
@@ -43,13 +43,15 @@ object NstepAlgo {
     }
 
     // println("\n");
-    // println("Final Result in " + iteration + " iteration");
+    println("Final Result in " + iteration + " iteration");
     // println("\n");
-//    val out=Ans.sortBy(_.getScore).reverse
-//    for (x <- out) {
-//      println(x.getId+"     "+x.getScore);
-//    }
-
+    val out=Ans.sortBy(_.getScore).reverse
+    var totalScore=0.0
+   for (x <- out) {
+     totalScore+=x.getScore
+    // println(x.getId+"     "+x.getScore);
+    }
+    println("total======" + totalScore)
   }
   def localAnsReducer(a:List[SpatialObject],b:List[SpatialObject],Kprime:Int):List[SpatialObject]={
     var merged=new ListBuffer[SpatialObject]()
