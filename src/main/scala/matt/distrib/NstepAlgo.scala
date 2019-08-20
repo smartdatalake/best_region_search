@@ -15,17 +15,17 @@ import matt.score.{ScoreFunctionCount, ScoreFunctionTotalScore}
 import matt.definitions.{Generic, GridIndexer}
 
 object NstepAlgo {
-  val base=8
+  //var base=0
   def localAlgo(index:Int,input:  Iterable[POI], eps: Double, topk: Int, finalAnswers: List[SpatialObject],gridIndexer: GridIndexer): (Int,List[SpatialObject]) = {
-   // val scoreFunction = new ScoreFunctionCount[POI]();
     val scoreFunction = new ScoreFunctionTotalScore[POI]();
     val distinct = true;
     val bcaFinder = new BCAIndexProgressive(distinct,gridIndexer);
     return (index,bcaFinder.findBestCatchmentAreas(input.toList, eps, topk, scoreFunction, finalAnswers).toList);
   }
 
-  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int,gridIndexer: GridIndexer) {
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int,gridIndexer: GridIndexer,base:Int) {
     var Ans = List[SpatialObject]();
+   // this.base=base
     var iteration = 0;
     val Kprime = K;
     println(roundUp(math.log(gridIndexer.width) / math.log(base)))
@@ -38,11 +38,11 @@ object NstepAlgo {
       var rdds: Array[RDD[(Int, List[SpatialObject])]] = new Array[RDD[(Int, List[SpatialObject])]](base * roundUp(math.log(gridIndexer.width) / math.log(base)) + 1)
       rdds(0) = nodeToPoint.groupByKey().map(x => localAlgo(x._1,x._2, eps,  Math.min(Kprime, K - Ans.size),Ans, gridIndexer))
       while (lvl <= roundUp(math.log(gridIndexer.width) / math.log(base))) {
-        rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, Kprime))
+        rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl,base)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, Kprime))
         rdds(lvl).cache()
         println(lvl + ":::" + rdds(lvl).count())
         //  rdds(lvl).collect().foreach(x=>x._2.spatialObjects.foreach(x => println(x.getId + ":::::::" + x.getScore)))
-        // rdds(lvl-1)=null
+         rdds(lvl-1)=null
         lvl += 1
       }
 
@@ -63,9 +63,9 @@ object NstepAlgo {
     // println("\n");
     val out=Ans.sortBy(_.getScore).reverse
     var totalScore=0.0
-   for (x <- out) {
-     totalScore+=x.getScore
-    // println(x.getId+"     "+x.getScore);
+   for (i<- 0 to (K-1)) {
+     totalScore+=Ans.get(i).getScore
+     println((i+1)+":"+Ans.get(i).getId+"     "+Ans.get(i).getScore);
     }
     println("total======" + totalScore)
   }
@@ -95,9 +95,9 @@ object NstepAlgo {
     }
     return roundAnswers.toList
   }
-  def mapper(index: Int, result: List[SpatialObject], gridIndexer: GridIndexer, lvl: Int): (Int, List[SpatialObject]) = {
-    val (nodeI, nodeJ) = ((index - 1) % width(lvl - 1, gridIndexer), ((index - 1) / width(lvl - 1, gridIndexer).asInstanceOf[Double]).toInt)
-    ((nodeI / base).toInt + (nodeJ / base).toInt * width(lvl, gridIndexer) + 1, result)
+  def mapper(index: Int, result: List[SpatialObject], gridIndexer: GridIndexer, lvl: Int,base:Int): (Int, List[SpatialObject]) = {
+    val (nodeI, nodeJ) = ((index - 1) % width(lvl - 1, gridIndexer,base), ((index - 1) / width(lvl - 1, gridIndexer,base).asInstanceOf[Double]).toInt)
+    ((nodeI / base).toInt + (nodeJ / base).toInt * width(lvl, gridIndexer,base) + 1, result)
   }
   def reducer(index: Int, results: Iterable[List[SpatialObject]], gridIndexer: GridIndexer, Kprime: Int): (Int, List[SpatialObject]) = {
 var maxMin=0.0
@@ -129,7 +129,7 @@ var maxMin=0.0
   }
   def roundUp(d: Double) = math.ceil(d).toInt
 
-  def width(lvl: Int, gridIndexer: GridIndexer): Int = {
+  def width(lvl: Int, gridIndexer: GridIndexer,base:Int): Int = {
     var width = gridIndexer.width
     for (i <- 1 to lvl)
       width = roundUp(width / base.asInstanceOf[Double])

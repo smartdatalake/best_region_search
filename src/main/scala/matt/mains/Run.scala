@@ -22,7 +22,7 @@ object Run {
   Logger.getLogger("org").setLevel(Level.OFF)
   val spark = SparkSession
     .builder
-    //  .master("local[*]")
+  //    .master("local[*]")
     .appName("Simple Application")
     .config("spark.dynamicAllocation.minExecutors", "25")
     .config("spark.dynamicAllocation.executorIdleTimeout", "50000s")
@@ -47,6 +47,7 @@ object Run {
   val eps = args(1).toDouble
   val cores = args(2).toInt
   val algo=args(3).toInt
+  val base=args(4).toInt
 
 
   //////end Param & config
@@ -71,6 +72,7 @@ object Run {
   println("topK: " + topk );
   println("eps: " + eps );
   println("part#: " + cores );
+  println("base: " + base );
 
 
 
@@ -87,7 +89,7 @@ object Run {
 
   if (algo==0) {
    val t = System.nanoTime()
-   matt.distrib.NstepAlgo.Run(nodeToPoint, eps, topk, gridIndexer);
+   matt.distrib.NstepAlgo.Run(nodeToPoint, eps, topk, gridIndexer,base);
    println("Nstep:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
    println("-----------------------------------------------------------------------------------------------------------------------------")
    println("-----------------------------------------------------------------------------------------------------------------------------")
@@ -114,7 +116,7 @@ object Run {
   }
   if (algo==3) {
    var t = System.nanoTime()
-   matt.distrib.OnestepAlgoReduce.Run(nodeToPoint, eps, topk, gridIndexer);
+   matt.distrib.OnestepAlgoReduce.Run(nodeToPoint, eps, topk, gridIndexer,base);
    println("Single:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
    println("-----------------------------------------------------------------------------------------------------------------------------")
    println("-----------------------------------------------------------------------------------------------------------------------------")

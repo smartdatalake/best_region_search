@@ -16,7 +16,7 @@ import scala.util.control.Breaks.breakable
 object OnestepAlgoReduce {
 
   var topK = 300
-  var base = 8
+  //var base = 0
   // var gridIndexer: GridIndexer = new GridIndexer(0, 0.0, (0, 0), (0, 0))
   //////////////////////////////////////////////////////
   //////////////////////////////////////////////////////
@@ -28,8 +28,8 @@ object OnestepAlgoReduce {
     (input._1, bcaFinder.findBestCatchmentAreas(pois, input._1, eps, topk, scoreFunction))
   }
 
-  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer) {
-    this.base = 8
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer,base:Int) {
+   // this.base = base
     this.topK = topk
     //this.gridIndexer = gridIndexer2
     val Ans = ListBuffer[SpatialObject]()
@@ -41,7 +41,7 @@ object OnestepAlgoReduce {
     rdds(0) = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer))
     println(roundUp(math.log(gridIndexer.width) / math.log(base)))
     while (lvl <= roundUp(math.log(gridIndexer.width) / math.log(base))) {
-      rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, lvl))
+      rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl,base:Int)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, lvl,base:Int))
       rdds(lvl).cache()
       println(lvl + ":::" + rdds(lvl).count())
       //  rdds(lvl).collect().foreach(x=>x._2.spatialObjects.foreach(x => println(x.getId + ":::::::" + x.getScore)))
@@ -109,12 +109,12 @@ object OnestepAlgoReduce {
     return roundAnswers.toList
   }
 
-  def mapper(index: Int, result: OneStepResult, gridIndexer: GridIndexer, lvl: Int): (Int, OneStepResult) = {
-    val (nodeI, nodeJ) = ((index - 1) % width(lvl - 1, gridIndexer), ((index - 1) / width(lvl - 1, gridIndexer).asInstanceOf[Double]).toInt)
-    ((nodeI / base).toInt + (nodeJ / base).toInt * width(lvl, gridIndexer) + 1, result)
+  def mapper(index: Int, result: OneStepResult, gridIndexer: GridIndexer, lvl: Int,base:Int): (Int, OneStepResult) = {
+    val (nodeI, nodeJ) = ((index - 1) % width(lvl - 1,base:Int, gridIndexer), ((index - 1) / width(lvl - 1,base:Int, gridIndexer).asInstanceOf[Double]).toInt)
+    ((nodeI / base).toInt + (nodeJ / base).toInt * width(lvl,base:Int, gridIndexer) + 1, result)
   }
 
-  def reducer(index: Int, results: Iterable[OneStepResult], gridIndexer: GridIndexer, lvl: Int): (Int, OneStepResult) = {
+  def reducer(index: Int, results: Iterable[OneStepResult], gridIndexer: GridIndexer, lvl: Int,base:Int): (Int, OneStepResult) = {
     var preSafe = 0
     var preUnsafe = 0
     var dependencyGraph = new DependencyGraph(gridIndexer)
@@ -125,8 +125,8 @@ object OnestepAlgoReduce {
       preUnsafe += x.countUnsafe
     })
    // System.err.println("preSafe:::" + preSafe + "      preUnsafe:::::" + preUnsafe)
-    var I = ((index - 1) % width(lvl, gridIndexer))
-    var J = (((index - 1) / (width(lvl, gridIndexer)).asInstanceOf[Double]).toInt)
+    var I = ((index - 1) % width(lvl,base:Int, gridIndexer))
+    var J = (((index - 1) / (width(lvl,base:Int, gridIndexer)).asInstanceOf[Double]).toInt)
     val cornerALong = I * math.pow(base, lvl).toInt * gridIndexer.gridSizePerCell
     val cornerALat = J * math.pow(base, lvl).toInt * gridIndexer.gridSizePerCell
     val cornerBLong = cornerALong + math.pow(base, lvl).toInt * gridIndexer.gridSizePerCell - 1
@@ -166,7 +166,7 @@ object OnestepAlgoReduce {
 
   def roundUp(d: Double) = math.ceil(d).toInt
 
-  def width(lvl: Int, gridIndexer: GridIndexer): Int = {
+  def width(lvl: Int,base:Int, gridIndexer: GridIndexer): Int = {
     var width = gridIndexer.width
     for (i <- 1 to lvl)
       width = roundUp(width / base.asInstanceOf[Double])
