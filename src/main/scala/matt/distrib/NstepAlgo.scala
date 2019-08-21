@@ -61,7 +61,7 @@ object NstepAlgo {
     // println("\n");
     println("Final Result in " + iteration + " iteration");
     // println("\n");
-    val out=Ans.sortBy(_.getScore).reverse
+    Ans=Ans.sortBy(_.getScore).reverse
     var totalScore=0.0
    for (i<- 0 to (K-1)) {
      totalScore+=Ans.get(i).getScore

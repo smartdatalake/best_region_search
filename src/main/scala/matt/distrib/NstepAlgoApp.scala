@@ -32,27 +32,34 @@ object NstepAlgoApp {
     while (Ans.length < K) {
       println("Current Iteration: " + iteration);
       // calculate the local results at each node.
-      val resultRegionOfRound = nodeToPoint.groupByKey().flatMap(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans,gridIndexer));
+      val resultRegionOfRound = nodeToPoint.groupByKey().flatMap(x => localAlgo(x._2, eps, Math.min(Kprime, K - Ans.size), Ans, gridIndexer));
       val localAnswers = resultRegionOfRound.collect().toList.sortBy(_.getScore).reverse
       var roundAnswers = ListBuffer[SpatialObject]()
       /////take Kprime acceptable regions from current round answers as "roundAnswers"
       ////////////////////////////////
       var pos = 0
-      var appIndex=0
+      var appIndex = 0
+      var score = -1.0
       breakable {
         while (pos < Math.min(Kprime, K - Ans.size)) {
-          if (Generic.intersectsList(localAnswers.get(pos), roundAnswers)) {
-            if(appIndex==0){
-              val temp = localAnswers.get(pos);
-              roundAnswers += temp;
-              appIndex=roundAnswers.size-1
+          val temp = localAnswers.get(pos)
+          if (Generic.intersectsList(temp, roundAnswers)) {
+            if (appIndex == 0) {
+              println("oops"+temp.getId+"     "+temp.getScore)
+              score = temp.getScore;
+              appIndex = roundAnswers.size
             }
-            else if(localAnswers.get(pos).getScore<roundAnswers.get(appIndex).getScore*(sigma)) {
-              roundAnswers.remove(appIndex,roundAnswers.size)
+            else if (temp.getScore < score * sigma) {
+              println("break"+temp.getId+"     "+temp.getScore)
+              roundAnswers.remove(appIndex, roundAnswers.size)
               break;
             }
           } else {
-            val temp = localAnswers.get(pos);
+            if (score > 0 && (temp.getScore < score * sigma)) {
+              println("break2"+temp.getId+"     "+temp.getScore)
+              roundAnswers.remove(appIndex, roundAnswers.size)
+              break;
+            }
             roundAnswers += temp;
           }
           pos += 1
