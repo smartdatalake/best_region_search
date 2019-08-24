@@ -21,7 +21,7 @@ object NstepAlgoApp {
     val scoreFunction = new ScoreFunctionTotalScore[POI]();
     val distinct = true;
     val bcaFinder = new BCAIndexProgressive(distinct,gridIndexer);
-    return bcaFinder.findBestCatchmentAreas(input.toList, eps, topk, scoreFunction, finalAnswers).toList;
+    return bcaFinder.findBestCatchmentAreas(input.toList, eps, topk, scoreFunction, finalAnswers,-1).toList;
   }
 
   def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int, sigma:Double,gridIndexer: GridIndexer) {

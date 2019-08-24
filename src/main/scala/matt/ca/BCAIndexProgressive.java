@@ -18,7 +18,7 @@ import matt.score.ScoreFunction;
 public class BCAIndexProgressive extends BCAFinder<POI> {
 
 	private HashSet<String> duplicate = new HashSet<>();
-	private HashMap<String,SpatialObject> topKIndex = new HashMap<>();
+	private HashMap<String,SpatialObject> topKIndex;
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
 	private GridIndexer gridIndexer;
@@ -31,13 +31,19 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 
 	@Override
 	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k, ScoreFunction<POI> scoreFunction) {
-		return findBestCatchmentAreas(pois, eps, k, (ScoreFunctionTotalScore)scoreFunction, new ArrayList<>());
+		return findBestCatchmentAreas(pois, eps, k, (ScoreFunctionTotalScore)scoreFunction, new ArrayList<>(),-1);
+	}
+
+	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction) {
+		return findBestCatchmentAreas(pois, eps, k, scoreFunction, new ArrayList<>(),-1);
 	}
 
 	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k,
-													  ScoreFunctionTotalScore<POI> scoreFunction, List<SpatialObject> previous) {
+													  ScoreFunctionTotalScore<POI> scoreFunction, List<SpatialObject> previous,int node) {
 
 		long time = System.nanoTime();
+		System.err.print(","+node);
+		topKIndex=new HashMap<>();
 		for (SpatialObject spatialObject: previous ) {
 			topKIndex.put((gridIndexer.getCellIndex(spatialObject.getGeometry().getCoordinates()[1].x
 					, spatialObject.getGeometry().getCoordinates()[1].y)._1().toString()+":"+gridIndexer.getCellIndex(spatialObject.getGeometry().getCoordinates()[1].x
@@ -140,7 +146,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 							  List<SpatialObject> topk, List<SpatialObject> previous) {
 		try {
 			if (block.type == Block.BLOCK_TYPE_REGION) {
-				inspectResult(block, eps, topk, previous);
+				inspectResult(block, eps, topk);
 			} else {
 				if (block != null&&block.orderedRectangles.size()>0) {
 
@@ -169,7 +175,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		}
 	}
 
-	private void inspectResult(Block block, double eps, List<SpatialObject> topk, List<SpatialObject> previous) {
+	private void inspectResult(Block block, double eps, List<SpatialObject> topk) {
 		// generate candidate result
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps

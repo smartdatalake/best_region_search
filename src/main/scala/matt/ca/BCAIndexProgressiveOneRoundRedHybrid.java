@@ -1,6 +1,7 @@
 package matt.ca;
 
 import matt.*;
+import matt.definitions.Generic;
 import matt.definitions.GridIndexer;
 import matt.score.OneStepResult;
 import matt.score.ScoreFunction;
@@ -13,7 +14,7 @@ import scala.Tuple2;
 import java.util.*;
 
 
-public class BCAIndexProgressiveOneRoundRed {
+public class BCAIndexProgressiveOneRoundRedHybrid {
 	private boolean IsOptimized;
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
@@ -25,15 +26,15 @@ public class BCAIndexProgressiveOneRoundRed {
 	private SpatialObject left, up, corner;
 	private int node;
 	private HashSet<String> duplicate = new HashSet<>();
-
-	public BCAIndexProgressiveOneRoundRed(boolean distinctMode, GridIndexer gridIndexer) {
+	private HashMap<String,SpatialObject> topKIndex;
+	public BCAIndexProgressiveOneRoundRedHybrid(boolean distinctMode, GridIndexer gridIndexer) {
 		super();
 		this.distinctMode = distinctMode;
 		this.gridIndexer = gridIndexer;
 	}
 
 
-	public OneStepResult findBestCatchmentAreas(List<POI> pois, int node, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction) {
+	public OneStepResult findBestCatchmentAreas(List<POI> pois, int node, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction,List<SpatialObject> previous) {
 		IsOptimized = false;
 		DependencyGraph dependencyGraph = new DependencyGraph(gridIndexer);
 		dependencyGraph.setPartNum(node);
@@ -43,6 +44,12 @@ public class BCAIndexProgressiveOneRoundRed {
 			List<SpatialObject> topk = new ArrayList<SpatialObject>();
 			topk.add(t);
 			return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
+		}
+		topKIndex=new HashMap<>();
+		for (SpatialObject spatialObject: previous ) {
+			topKIndex.put((gridIndexer.getCellIndex(spatialObject.getGeometry().getCoordinates()[1].x
+					, spatialObject.getGeometry().getCoordinates()[1].y)._1().toString()+":"+gridIndexer.getCellIndex(spatialObject.getGeometry().getCoordinates()[1].x
+					, spatialObject.getGeometry().getCoordinates()[1].y)._2().toString()),spatialObject);
 		}
 		HashMap<String, POI> temp = new HashMap<>();
 		for (POI poi : pois) {
@@ -92,13 +99,14 @@ public class BCAIndexProgressiveOneRoundRed {
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
+	//	System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
 		return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 	}
 
 	public Object findBestCatchmentAreas(List<POI> pois, List<BorderResult> border, int node, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction) {
 		DependencyGraph dependencyGraph = new DependencyGraph(gridIndexer);
 		if (pois.size() == 0) {
-			return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
+			return dependencyGraph.getFinalResult();
 		}
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		this.node = node;
@@ -115,7 +123,7 @@ public class BCAIndexProgressiveOneRoundRed {
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
 		//System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
-		return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
+		return dependencyGraph.getFinalResult().toList();
 	}
 
 	private PriorityQueue<Block> initQueue(Grid grid, ScoreFunctionTotalScore<POI> scoreFunction, double eps) {
@@ -233,7 +241,6 @@ public class BCAIndexProgressiveOneRoundRed {
 		//3rd Condition
 		else if (opt) {
 			dependencyGraph.addSafeRegion(candidate);
-			dependencyGraph.increaseSafeCNT();
 			opt1++;
 		} else if (con == 2 || dependencyGraph.IsBorderRegion(candidate)) {
 			unsafeCNT++;
@@ -265,29 +272,41 @@ public class BCAIndexProgressiveOneRoundRed {
 			return;
 		} else
 			duplicate.add(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type);
-
-		int con = dependencyGraph.overlapCon(candidate);
-
-		//1st Condition
-		if (con == 0 && !dependencyGraph.IsBorderRegion(candidate))
-			dependencyGraph.addSafeRegion(candidate);
-			//2nd Condition
-		else if (con == 1)
-			// It is not added to dependency graph
-			return;
-			//3rd Condition
-		else if (con == 2 || dependencyGraph.IsBorderRegion(candidate)) {
-			unsafeCNT++;
-			dependencyGraph.addUnsafeRegion(candidate);
-			if (dependencyGraph.IsDependencyIncluded(candidate)) {
-				// Do not add Safe
-				// Do not add M
-				return;
-			} else {
-				dependencyGraph.increaseSafeCNT();
-				dependencyGraph.addM(candidate);
+		boolean isDistinct = true;
+		int cellI = Integer.parseInt(gridIndexer.getCellIndex(candidate.getGeometry().getCoordinates()[1].x
+				, candidate.getGeometry().getCoordinates()[1].y)._1().toString());
+		int cellJ = Integer.parseInt(gridIndexer.getCellIndex(candidate.getGeometry().getCoordinates()[1].x
+				, candidate.getGeometry().getCoordinates()[1].y)._2().toString());
+		for (int i = -1; i <= 1; i++)
+			for (int j = -1; j <= 1; j++) {
+				SpatialObject t = topKIndex.getOrDefault(((cellI + i) + ":" + (cellJ + j)), null);
+				if (t != null && Generic.intersects(candidate, t))
+					isDistinct = false;
 			}
+		if (isDistinct) {
+			int con = dependencyGraph.overlapCon(candidate);
 
+			//1st Condition
+			if (con == 0 && !dependencyGraph.IsBorderRegion(candidate))
+				dependencyGraph.addSafeRegion(candidate);
+				//2nd Condition
+			else if (con == 1)
+				// It is not added to dependency graph
+				return;
+				//3rd Condition
+			else if (con == 2 || dependencyGraph.IsBorderRegion(candidate)) {
+				unsafeCNT++;
+				dependencyGraph.addUnsafeRegion(candidate);
+				if (dependencyGraph.IsDependencyIncluded(candidate)) {
+					// Do not add Safe
+					// Do not add M
+					return;
+				} else {
+					dependencyGraph.increaseSafeCNT();
+					dependencyGraph.addM(candidate);
+				}
+
+			}
 		}
 	}
 

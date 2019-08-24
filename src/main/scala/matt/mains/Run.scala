@@ -48,6 +48,9 @@ object Run {
   val cores = args(2).toInt
   val algo=args(3).toInt
   val base=args(4).toInt
+  var Kprime=args(5).toInt
+  var shift=args(6).toInt
+  //if(algo==4)
 
 
   //////end Param & config
@@ -65,14 +68,17 @@ object Run {
   val minLat = inputData.select("latitude").reduce((x, y) => if (x.getAs[Double]("latitude") < y.getAs[Double]("latitude")) x else y).getAs[Double](0)
   val maxLat = inputData.select("latitude").reduce((x, y) => if (x.getAs[Double]("latitude") > y.getAs[Double]("latitude")) x else y).getAs[Double](0)
 
-  val minmaxLong = (minLong - eps / 10, maxLong + eps / 10);
+  val minmaxLong = (minLong - eps / 10, maxLong + shift);
   println("minmaxLONG: " + minmaxLong);
-  val minmaxLat = (minLat - eps / 10, maxLat + eps / 10);
+  val minmaxLat = (minLat - eps / 10, maxLat + shift);
   println("minmaxLat: " + minmaxLat);
   println("topK: " + topk );
   println("eps: " + eps );
   println("part#: " + cores );
+  println("algo: " + algo );
   println("base: " + base );
+  println("k': " + Kprime );
+  println("shift': " + shift );
 
 
 
@@ -109,7 +115,7 @@ object Run {
   if (algo==2) {
    val t = System.nanoTime()
    val nodeOptToPoint = inputData.rdd.flatMap(x => Generic.poiOptToKeyValue(x, geometryFactory, gridIndexer));
-   matt.distrib.OnestepAlgoOptimized.Run(nodeOptToPoint, eps,  topk, gridIndexer)
+   matt.distrib.OnestepAlgoOptimized.Run(nodeOptToPoint, eps,  topk, gridIndexer,base)
    println("SingleOpt:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
    println("-----------------------------------------------------------------------------------------------------------------------------")
    println("-----------------------------------------------------------------------------------------------------------------------------")
@@ -122,6 +128,13 @@ object Run {
    println("-----------------------------------------------------------------------------------------------------------------------------")
   }
 
+  if (algo==4) {
+   var t = System.nanoTime()
+   matt.distrib.OnestepAlgoReduceHybrid.Run(nodeToPoint, eps, topk, gridIndexer,base,Kprime);
+   println("SingleHybrid:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
+   println("-----------------------------------------------------------------------------------------------------------------------------")
+   println("-----------------------------------------------------------------------------------------------------------------------------")
+  }
   spark.stop()
  };
 
