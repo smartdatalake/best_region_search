@@ -1,8 +1,8 @@
 package matt.distrib
 
-import matt.ca.{BCAIndexProgressive, BCAIndexProgressiveOneRound, BCAIndexProgressiveOneRoundRed}
+import matt.ca.{BCAIndexProgressive, BCAIndexProgressiveOneRoundRed}
 import matt.definitions.GridIndexer
-import matt.score.{OneStepResult, ScoreFunctionCount, ScoreFunctionTotalScore}
+import matt.score.{OneStepResult, ScoreFunctionTotalScore}
 import matt.{BorderResult, DependencyGraph, POI, SpatialObject}
 import org.apache.spark.rdd.RDD
 
@@ -14,11 +14,15 @@ object OnestepAlgoOptimized {
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
-  def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, gridIndexer: GridIndexer): (Int,OneStepResult) = {
+  def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, gridIndexer: GridIndexer,ttype:Int): (Int,OneStepResult) = {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
     val scoreFunction = new ScoreFunctionTotalScore[POI]()
     val (inside, border) = dividePOIs(input, gridIndexer)
-    val borderInfo = calBorderTop1(border, eps, gridIndexer).toList
+    var borderInfo: List[BorderResult] = null
+    if (ttype == 1)
+      borderInfo = calBorderTop1(border, eps, gridIndexer).toList
+    else if (ttype == 2)
+      borderInfo = calBorderUpper(border, eps, gridIndexer).toList
     val bcaFinder = new BCAIndexProgressiveOneRoundRed(true, gridIndexer)
     (input._1, bcaFinder.findBestCatchmentAreas(inside, borderInfo, input._1, eps, topk, scoreFunction).asInstanceOf[OneStepResult])
   }
@@ -33,12 +37,12 @@ object OnestepAlgoOptimized {
     return (input._1, bcaFinder.findBestCatchmentAreas(pois, eps, 1, scoreFunction).get(0))
   }
 
-  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer,base:Int) {
-    val Ans = ListBuffer[SpatialObject]()
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer,base:Int, ttype:Int) {
+    var Ans = ListBuffer[SpatialObject]()
     var lvl = 1;
-    val lvl0 = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer))
+    val lvl0 = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer,ttype))
     var rdds: Array[RDD[(Int, OneStepResult)]] = new Array[RDD[(Int, OneStepResult)]](base * roundUp(math.log(gridIndexer.width) / math.log(base)) + 1)
-    rdds(0) = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer))
+    rdds(0) = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer,ttype))
     println(roundUp(math.log(gridIndexer.width) / math.log(base)))
     while (lvl <= roundUp(math.log(gridIndexer.width) / math.log(base))) {
       rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl, base: Int)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, lvl, base, topk))
@@ -48,7 +52,12 @@ object OnestepAlgoOptimized {
       lvl += 1
     }
     Ans.addAll(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).spatialObjects)
-    Ans.sortBy(_.getScore).reverse.foreach(x => System.err.println(x.getId + ":::::::" + x.getScore))
+    Ans=Ans.sortBy(_.getScore).reverse
+    System.err.println("SingleOpt,"+topk+" eps,"+eps)
+    for (i<- 0 to (topk-1)) {
+      System.err.println((i+1)+":"+Ans.get(i).getId+"     "+Ans.get(i).getScore);
+
+    }
   }
 
   def mapper(index: Int, result: OneStepResult, gridIndexer: GridIndexer, lvl: Int, base: Int): (Int, OneStepResult) = {
@@ -150,6 +159,21 @@ object OnestepAlgoOptimized {
         quadCellPois.addAll(poisInCell.get((cellInI + 1, cellInJ + 1)).getOrElse(new ListBuffer[POI]))
         quadCellPois.addAll(poisInCell.get((cellInI, cellInJ + 1)).getOrElse(new ListBuffer[POI]))
         output.add(new BorderResult(cellInI, cellInJ, bcaFinder.findBestCatchmentAreas(quadCellPois, eps, 1, scoreFunction).get(0).getScore))
+      }
+    }
+    return output
+  }
+
+  def calBorderUpper(poisInCell: HashMap[(Int, Int), ListBuffer[POI]], eps: Double, gridIndexer: GridIndexer): ListBuffer[BorderResult] = {
+    val output = new ListBuffer[BorderResult]
+    for (((cellInI, cellInJ), pois) <- poisInCell) {
+      if (cellInI == -1 || cellInI == gridIndexer.gridSizePerCell || cellInJ == -1 || cellInI == gridIndexer.gridSizePerCell) {
+        var upper=0.0
+        poisInCell.get((cellInI, cellInJ)).getOrElse(new ListBuffer[POI]).foreach(x=>upper+=x.getScore)
+        poisInCell.get((cellInI+1, cellInJ)).getOrElse(new ListBuffer[POI]).foreach(x=>upper+=x.getScore)
+        poisInCell.get((cellInI+1, cellInJ+1)).getOrElse(new ListBuffer[POI]).foreach(x=>upper+=x.getScore)
+        poisInCell.get((cellInI, cellInJ+1)).getOrElse(new ListBuffer[POI]).foreach(x=>upper+=x.getScore)
+        output.add(new BorderResult(cellInI, cellInJ, upper))
       }
     }
     return output

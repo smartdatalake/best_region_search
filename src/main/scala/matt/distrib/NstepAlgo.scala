@@ -21,13 +21,12 @@ object NstepAlgo {
     return (index,bcaFinder.findBestCatchmentAreas(input.toList, eps, topk, scoreFunction, finalAnswers,index).toList);
   }
 
-  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int,gridIndexer: GridIndexer,base:Int) {
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, K: Int,Kprime:Int,gridIndexer: GridIndexer,base:Int) {
     var Ans = List[SpatialObject]();
     var iteration = 0;
-    val Kprime = K;
     println(roundUp(math.log(gridIndexer.width) / math.log(base)))
     while (Ans.length < K) {
-      println("Current Iteration: " + iteration);
+      println("Current Iteration: " + iteration+"ANS.size="+Ans.size);
       var lvl = 1;
       var rdds: Array[RDD[(Int, List[SpatialObject])]] = new Array[RDD[(Int, List[SpatialObject])]](base * roundUp(math.log(gridIndexer.width) / math.log(base)) + 1)
       rdds(0) = nodeToPoint.groupByKey().map(x => localAlgo(x._1,x._2, eps,  Math.min(Kprime, K - Ans.size),Ans, gridIndexer))
@@ -41,16 +40,11 @@ object NstepAlgo {
       }
 
       val finalResult = rdds(lvl - 1).map(x => x._2).collect().toList.get(0)
-      finalResult.asInstanceOf[List[SpatialObject]].foreach(x => System.err.println(x.getId + ":::::::" + x.getScore))
-      //System.err.println(finalResult.sortBy(_.getScore).reverse)
-    //  System.err.println(finalResult)
       Ans = Ans.++(finalResult);
       iteration = iteration + 1;
     }
 
-    // println("\n");
     println("Final Result in " + iteration + " iteration");
-    // println("\n");
     Ans=Ans.sortBy(_.getScore).reverse
     System.err.println("Nround,"+K+" eps,"+eps)
     var totalScore=0.0
@@ -93,7 +87,6 @@ object NstepAlgo {
   def reducer(index: Int, results: Iterable[List[SpatialObject]], gridIndexer: GridIndexer, Kprime: Int): (Int, List[SpatialObject]) = {
 var maxMin=0.0
     var minlocal=200000.0
-//    results.toList.foreach(x=>x.tail.get(0).getScore)
     var candidates = new ListBuffer[SpatialObject]
     results.foreach(x=>{
       minlocal=1000000.0
@@ -107,7 +100,7 @@ var maxMin=0.0
     val roundAnswers=new ListBuffer[SpatialObject]()
     breakable {
       while (pos < Kprime&&pos<candidates.size) {
-        if (candidates.get(pos).getScore<=maxMin || Generic.intersectsList(candidates.get(pos), roundAnswers)) {
+        if (candidates.get(pos).getScore<maxMin || Generic.intersectsList(candidates.get(pos), roundAnswers)) {
           break;
         } else {
           val temp = candidates.get(pos);

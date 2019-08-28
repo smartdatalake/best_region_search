@@ -28,6 +28,11 @@ public class BorderResult implements Serializable {
         return score;
     }
 
+    public boolean check(SpatialObject spatialObject){
+        if(spatialObject.getScore()>score)
+            return true;
+        return false;
+    }
     @Override
     public String toString(){
         return "("+cellInI+","+cellInJ+"):"+score;

@@ -1,10 +1,6 @@
 package matt.ca;
 
-import java.text.DecimalFormat;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-
-import matt.definitions.Generic;
 import matt.definitions.GridIndexer;
 import matt.score.ScoreFunctionTotalScore;
 import org.locationtech.jts.geom.Envelope;
@@ -18,15 +14,12 @@ import matt.score.ScoreFunction;
 public class BCAIndexProgressive extends BCAFinder<POI> {
 
 	private HashSet<String> duplicate = new HashSet<>();
-	private HashMap<String,SpatialObject> topKIndex;
 	private boolean distinctMode;
 	private GeometryFactory geometryFactory;
-	private GridIndexer gridIndexer;
 
 	public BCAIndexProgressive(boolean distinctMode, GridIndexer gridIndexer) {
 		super();
 		this.distinctMode = distinctMode;
-		this.gridIndexer=gridIndexer;
 	}
 
 	@Override
@@ -41,19 +34,6 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 	public List<SpatialObject> findBestCatchmentAreas(List<POI> pois, double eps, int k,
 													  ScoreFunctionTotalScore<POI> scoreFunction, List<SpatialObject> previous,int node) {
 
-		long time = System.nanoTime();
-		System.err.print(","+node);
-		topKIndex=new HashMap<>();
-		for (SpatialObject spatialObject: previous ) {
-			topKIndex.put((gridIndexer.getCellIndex(spatialObject.getGeometry().getCoordinates()[1].x
-					, spatialObject.getGeometry().getCoordinates()[1].y)._1().toString()+":"+gridIndexer.getCellIndex(spatialObject.getGeometry().getCoordinates()[1].x
-					, spatialObject.getGeometry().getCoordinates()[1].y)._2().toString()),spatialObject);
-		}
-		boolean timed = false;
-	//	if (pois.size() > 5000) {
-	//		System.err.println("poi# in a partition " + pois.size() + " on location around   " + pois.get(0).getPoint().getX() + ":" + pois.get(0).getPoint().getY());
-	//		timed = true;
-	//	}
 		HashMap<String, POI> temp = new HashMap<>();
 		for (POI poi : pois) {
 			double x = poi.getPoint().getX();
@@ -62,14 +42,9 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 				temp.get(x + ":" + y).increaseScore();
 			} else
 				temp.put(x + ":" + y, poi);
-
-	//				System.err.println("before "+ pois.size());
-	//				System.err.println(temp.size());
 			pois = new ArrayList<>();
 			pois.addAll(temp.values());
-	//				System.err.println("after "+pois.size());
 		}
-	//		System.err.println("Now start with pois# "+ pois.size());
 		List<SpatialObject> topk = new ArrayList<SpatialObject>();
 		if (pois.size() == 0) {
 			SpatialObject t = new SpatialObject();
@@ -94,8 +69,6 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			t.setScore(0);
 			topk.add(t);
 		}
-	//	if (timed)
-	//		System.err.println(" time" + TimeUnit.NANOSECONDS.toMillis((System.nanoTime() - time)));
 		return topk;
 	}
 
@@ -129,8 +102,6 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 						}
 					}
 				}
-		//		block = new Block(cellPois, scoreFunction, Block.BLOCK_TYPE_CELL, Block.BLOCK_ORIENTATION_VERTICAL,
-		//				Block.EXPAND_NONE, eps, geometryFactory);
 				if (cellPois.size() > 0) {
 				block = new Block(cellPois, scoreFunction, Block.BLOCK_TYPE_CELL, Block.BLOCK_ORIENTATION_VERTICAL,
 						Block.EXPAND_NONE, eps, geometryFactory,0,cellPois.size()-1);
@@ -146,7 +117,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 							  List<SpatialObject> topk, List<SpatialObject> previous) {
 		try {
 			if (block.type == Block.BLOCK_TYPE_REGION) {
-				inspectResult(block, eps, topk);
+				inspectResult(block, eps, topk,previous);
 			} else {
 				if (block != null&&block.orderedRectangles.size()>0) {
 
@@ -155,7 +126,6 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 
 				}
 			}
-			//if ((block.type == Block.BLOCK_TYPE_SLAB || block.type == Block.BLOCK_TYPE_REGION) && block.pois.size() > 1) {
 			if ((block.type == Block.BLOCK_TYPE_SLAB || block.type == Block.BLOCK_TYPE_REGION) && block.start<block.end) {
 				Block[] derivedBlocks = block.getSubBlocks();
 				for (int i = 0; i < derivedBlocks.length; i++) {
@@ -164,7 +134,6 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 			}
 		} catch (OutOfMemoryError e) {
 			System.err.println("current block location:   " + block.envelope.centre().getX() + ":" + block.envelope.centre().getY());
-		//	System.err.println("current block size:   " + block.pois.size());
 			System.err.println("current block size:   " + (block.end-block.start+1));
 			System.err.println("queue size:   " + queue.size());
 			int recCNT = 0;
@@ -175,7 +144,7 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		}
 	}
 
-	private void inspectResult(Block block, double eps, List<SpatialObject> topk) {
+	private void inspectResult(Block block, double eps, List<SpatialObject> topk,List<SpatialObject> previous) {
 		// generate candidate result
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
@@ -194,24 +163,23 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 		SpatialObject result = new SpatialObject(block.envelope.centre().y + "," + block.envelope.centre().x, block.relevanceScore, geometryFactory.toGeometry(e));
 		// if this result is valid, add it to top-k
 		boolean isDistinct = true;
-		int cellI = Integer.parseInt(gridIndexer.getCellIndex(result.getGeometry().getCoordinates()[1].x
-				, result.getGeometry().getCoordinates()[1].y)._1().toString());
-		int cellJ = Integer.parseInt(gridIndexer.getCellIndex(result.getGeometry().getCoordinates()[1].x
-				, result.getGeometry().getCoordinates()[1].y)._2().toString());
-		for (int i = -1; i <= 1; i++) {
-			for (int j = -1; j <= 1; j++) {
-				SpatialObject t = topKIndex.getOrDefault(((cellI + i) + ":" + (cellJ + j)), null);
-				if (t != null && Generic.intersects(result, t)) {
+		if (distinctMode) {
+			for (SpatialObject so : topk) {
+				if (e.intersects(so.getGeometry().getEnvelopeInternal())) {
 					isDistinct = false;
+					break;
+				}
+			}
+			for (SpatialObject so : previous) {
+				if (e.intersects(so.getGeometry().getEnvelopeInternal())) {
+					isDistinct = false;
+					break;
 				}
 			}
 		}
 		if (isDistinct) {
 			if (result.getGeometry() != null) {
 				topk.add(result);
-				topKIndex.put((gridIndexer.getCellIndex(result.getGeometry().getCoordinates()[1].x
-						, result.getGeometry().getCoordinates()[1].y)._1().toString() + ":" + gridIndexer.getCellIndex(result.getGeometry().getCoordinates()[1].x
-						, result.getGeometry().getCoordinates()[1].y)._2().toString()), result);
 			}
 		}
 	}
