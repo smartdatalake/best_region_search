@@ -46,9 +46,9 @@ public class BCAIndexProgressiveOneRoundRed {
 		}
 		HashMap<String, POI> temp = new HashMap<>();
 		for (POI poi : pois) {
-			double x = poi.getPoint().getX();
-			double y = poi.getPoint().getY();
-			if (temp.containsValue(x + ":" + y)) {
+			int x = (int)(poi.getPoint().getX()*100000);
+			int y = (int)(poi.getPoint().getY()*100000);
+			if (temp.containsKey(x + ":" + y)) {
 				temp.get(x + ":" + y).increaseScore();
 			} else
 				temp.put(x + ":" + y, poi);
@@ -72,6 +72,17 @@ public class BCAIndexProgressiveOneRoundRed {
 		if (pois.size() == 0) {
 			return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 		}
+		HashMap<String, POI> temp = new HashMap<>();
+        for (POI poi : pois) {
+            int x = (int)(poi.getPoint().getX()*100000);
+            int y = (int)(poi.getPoint().getY()*100000);
+            if (temp.containsKey(x + ":" + y)) {
+                temp.get(x + ":" + y).increaseScore();
+            } else
+                temp.put(x + ":" + y, poi);
+            pois = new ArrayList<>();
+            pois.addAll(temp.values());
+        }
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		this.node = node;
 		this.border = new HashMap<>();

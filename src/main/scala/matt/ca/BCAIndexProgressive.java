@@ -36,9 +36,9 @@ public class BCAIndexProgressive extends BCAFinder<POI> {
 
 		HashMap<String, POI> temp = new HashMap<>();
 		for (POI poi : pois) {
-			double x = poi.getPoint().getX();
-			double y = poi.getPoint().getY();
-			if (temp.containsValue(x + ":" + y)) {
+			int x = (int)(poi.getPoint().getX()*100000);
+			int y = (int)(poi.getPoint().getY()*100000);
+			if (temp.containsKey(x + ":" + y)) {
 				temp.get(x + ":" + y).increaseScore();
 			} else
 				temp.put(x + ":" + y, poi);

@@ -53,9 +53,9 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 		}
 		HashMap<String, POI> temp = new HashMap<>();
 		for (POI poi : pois) {
-			double x = poi.getPoint().getX();
-			double y = poi.getPoint().getY();
-			if (temp.containsValue(x + ":" + y)) {
+			int x = (int)(poi.getPoint().getX()*100000);
+			int y = (int)(poi.getPoint().getY()*100000);
+			if (temp.containsKey(x + ":" + y)) {
 				temp.get(x + ":" + y).increaseScore();
 			} else
 				temp.put(x + ":" + y, poi);
@@ -106,13 +106,24 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 	public Object findBestCatchmentAreas(List<POI> pois, List<BorderResult> border, int node, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction) {
 		DependencyGraph dependencyGraph = new DependencyGraph(gridIndexer);
 		if (pois.size() == 0) {
-			return dependencyGraph.getFinalResult();
+			return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
+		}
+		HashMap<String, POI> temp = new HashMap<>();
+		for (POI poi : pois) {
+			int x = (int)(poi.getPoint().getX()*100000);
+			int y = (int)(poi.getPoint().getY()*100000);
+			if (temp.containsKey(x + ":" + y)) {
+				temp.get(x + ":" + y).increaseScore();
+			} else
+				temp.put(x + ":" + y, poi);
+			pois = new ArrayList<>();
+			pois.addAll(temp.values());
 		}
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		this.node = node;
 		this.border = new HashMap<>();
-		//	for (BorderResult b : border)
-		//		this.border.put(b.makeKey(), b.score);
+		for (BorderResult b : border)
+			this.border.put(b.makeKey(), b.score);
 		IsOptimized = true;
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
@@ -123,7 +134,7 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
 		//System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
-		return dependencyGraph.getFinalResult().toList();
+		return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 	}
 
 	private PriorityQueue<Block> initQueue(Grid grid, ScoreFunctionTotalScore<POI> scoreFunction, double eps) {

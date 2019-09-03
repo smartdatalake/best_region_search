@@ -2,9 +2,11 @@
 package matt.distrib
 
 
+import java.util
+
 import matt.ca.BCAIndexProgressiveOneRoundRed
-import matt.definitions. GridIndexer
-import matt.score.{OneStepResult,ScoreFunctionTotalScore}
+import matt.definitions.GridIndexer
+import matt.score.{OneStepResult, ScoreFunctionTotalScore}
 import matt.{DependencyGraph, POI, SpatialObject}
 import org.apache.spark.rdd.RDD
 
@@ -12,6 +14,7 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 
 object OnestepAlgoReduce {
+
 
   def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, gridIndexer: GridIndexer): (Int, OneStepResult) = {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)

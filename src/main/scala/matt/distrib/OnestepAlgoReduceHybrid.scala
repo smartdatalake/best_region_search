@@ -66,6 +66,7 @@ object OnestepAlgoReduceHybrid {
     var minlocal = 200000.0
     results.foreach(x => {
       minlocal = 1000000.0
+      if(x.spatialObjects==null||x.spatialObjects.size==0) minlocal=0;
       x.spatialObjects.foreach(x => if (x.getScore < minlocal) minlocal = x.getScore())
       if (maxMin < minlocal)
         maxMin = minlocal
