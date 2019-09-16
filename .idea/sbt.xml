@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ScalaSbtSettings">
-    <option name="customVMPath" />
+    <option name="customVMEnabled" value="true" />
+    <option name="customVMPath" value="/usr/lib/jvm/java-8-oracle/jre" />
     <option name="linkedExternalProjectsSettings">
       <SbtProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -11,7 +12,6 @@
             <option value="$PROJECT_DIR$/project" />
           </set>
         </option>
-        <option name="sbtVersion" value="1.2.7" />
         <option name="useAutoImport" value="true" />
       </SbtProjectSettings>
     </option>

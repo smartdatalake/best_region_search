@@ -36,14 +36,11 @@ object OnestepAlgoReduceHybridOptOpt {
     var lvl=0
     while (Ans.size < topk) {
       lvl = 1;
-      println(rdds(0).count())
+   //   println(rdds(0).count())
       println(roundUp(math.log(gridIndexer.width) / math.log(base)))
       while (lvl <= roundUp(math.log(gridIndexer.width) / math.log(base))) {
         rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl, base: Int)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, lvl, base, topk,Ans))
         rdds(lvl).cache()
-        var t=0
-        rdds(lvl).collect().foreach(x=>t+=x._2.spatialObjects.size)
-        println(t)
         println(lvl + ":::" + rdds(lvl).count())
         // rdds(lvl-1)=null
         lvl += 1
@@ -69,7 +66,7 @@ object OnestepAlgoReduceHybridOptOpt {
     }
     //imple selecting query partition all partition that have less than k' safe region
     //print out frequency of querying partition and icrease for 3rd 4rth round
-    Ans = Ans.sortBy(_.getScore).reverse
+    Ans = Ans.sortBy(_.getId).reverse
     System.err.println("SingleHybridOpt," + topk + " eps," + eps)
     for (i <- 0 to (topk - 1)) {
       System.err.println((i + 1) + ":" + Ans.get(i).getId + "     " + Ans.get(i).getScore);

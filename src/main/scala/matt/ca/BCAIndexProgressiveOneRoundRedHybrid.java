@@ -71,7 +71,11 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 			block = queue.poll();
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
-		return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
+		if(dependencyGraph.safeRegionCnt()<k||queue.isEmpty()) {
+			//System.err.println(dependencyGraph.getFinalResult());
+			dependencyGraph.SetMinSafe(0);
+		}
+		return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()),(int)dependencyGraph.minSafe(), dependencyGraph.getFinalResult());
 	}
 
 	public OneStepResult findBestCatchmentAreas(List<POI> pois, SpatialObject left, SpatialObject up, SpatialObject Corner
@@ -100,7 +104,7 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
 	//	System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
-		return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
+		return new OneStepResult(opt1, (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 	}
 
 	public Object findBestCatchmentAreas(List<POI> pois, List<BorderResult> border, int node, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction) {
@@ -205,14 +209,21 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 		// generate candidate result
 		overall++;
 		int g = gridIndexer.gridSizePerCell();
+		// generate candidate result
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
-		SpatialObject candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, block.utilityScore, geometryFactory.toGeometry(e));
-		if (duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type)) {
+		SpatialObject candidate = new SpatialObject();
+		try {
+			candidate = new SpatialObject(block.envelope.centre().x + ":" + block.envelope.centre().y, block.utilityScore, geometryFactory.toGeometry(e));
+		} catch (Exception o) {
+			System.out.println(block);
+		}
+		if (duplicate.contains(myRound(block.envelope.centre().x, 10000) + ":" + myRound(block.envelope.centre().y, 10000) + ":" + block.type)) {
 			block.type = Block.EXPAND_NONE;
 			return;
 		} else
-			duplicate.add(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type);
+			duplicate.add(myRound(block.envelope.centre().x, 10000) + ":" + myRound(block.envelope.centre().y, 10000) + ":" + block.type);
+
 		Tuple2 index = gridIndexer.getCellIndexInGrid(node, candidate);
 		int cellInI = (int) index._1();
 		int cellInJ = (int) index._2();
@@ -270,6 +281,7 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 
 	private void inspectResult(Block block, double eps, DependencyGraph dependencyGraph) {
 		// generate candidate result
+		// generate candidate result
 		Envelope e = geometryFactory.createPoint(block.envelope.centre()).getEnvelopeInternal();
 		e.expandBy(eps / 2); // with fixed size eps
 		SpatialObject candidate = new SpatialObject();
@@ -278,11 +290,12 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 		} catch (Exception o) {
 			System.out.println(block);
 		}
-		if (duplicate.contains(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type)) {
+		if (duplicate.contains(myRound(block.envelope.centre().x, 10000) + ":" + myRound(block.envelope.centre().y, 10000) + ":" + block.type)) {
 			block.type = Block.EXPAND_NONE;
 			return;
 		} else
-			duplicate.add(block.envelope.centre().x + ":" + block.envelope.centre().y + ":" + block.type);
+			duplicate.add(myRound(block.envelope.centre().x, 10000) + ":" + myRound(block.envelope.centre().y, 10000) + ":" + block.type);
+
 		boolean isDistinct = true;
 		int cellI = Integer.parseInt(gridIndexer.getCellIndex(candidate.getGeometry().getCoordinates()[1].x
 				, candidate.getGeometry().getCoordinates()[1].y)._1().toString());

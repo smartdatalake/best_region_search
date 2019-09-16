@@ -1,9 +1,9 @@
 package matt.distrib
 
+import matt.{DependencyGraph, POI, SpatialObject}
 import matt.ca.BCAIndexProgressiveOneRoundRedHybrid
 import matt.definitions.GridIndexer
 import matt.score.{OneStepResult, ScoreFunctionTotalScore}
-import matt.{DependencyGraph, POI, SpatialObject}
 import org.apache.spark.rdd.RDD
 
 import scala.collection.JavaConversions._
@@ -29,10 +29,16 @@ object OnestepAlgoReduceHybrid {
         rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl, base: Int)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, lvl, base, topk))
         rdds(lvl).cache()
         println(lvl + ":::" + rdds(lvl).count())
-        // rdds(lvl-1)=null
+        rdds(lvl-1)=null
         lvl += 1
       }
       Ans.addAll(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).spatialObjects)
+      Ans=Ans.sortBy(_.getScore).reverse
+     // System.err.println("SingleHybrid,"+topk+" eps,"+eps)
+ //     for (i<- 0 to Ans.size-1) {
+ //       System.err.println((i+1)+":"+Ans.get(i).getId+"     "+Ans.get(i).getScore);
+
+  //    }
     }
     Ans=Ans.sortBy(_.getScore).reverse
     System.err.println("SingleHybrid,"+topk+" eps,"+eps)
@@ -65,11 +71,8 @@ object OnestepAlgoReduceHybrid {
     var maxMin = 0.0
     var minlocal = 200000.0
     results.foreach(x => {
-      minlocal = 1000000.0
-      if(x.spatialObjects==null||x.spatialObjects.size==0) minlocal=0;
-      x.spatialObjects.foreach(x => if (x.getScore < minlocal) minlocal = x.getScore())
-      if (maxMin < minlocal)
-        maxMin = minlocal
+    if(maxMin<x.minSafe)
+      maxMin=x.minSafe
     })
     var candidates = new ListBuffer[SpatialObject]
     results.foreach(x => candidates.addAll(x.spatialObjects))
@@ -100,7 +103,7 @@ object OnestepAlgoReduceHybrid {
       }
       pos += 1
     }
-    (index, new OneStepResult(dependencyGraph.safeRegionCnt, unsafe, index, 0, dependencyGraph.getFinalResult()))
+    (index, new OneStepResult(dependencyGraph.safeRegionCnt, unsafe, index,maxMin.toInt, dependencyGraph.getFinalResult()))
   }
 
   def roundUp(d: Double) = math.ceil(d).toInt

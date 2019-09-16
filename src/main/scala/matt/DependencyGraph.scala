@@ -18,7 +18,7 @@ class DependencyGraph (gridIndexer: GridIndexer) {
   var cornerALat = -1
   var cornerBLong = -1
   var cornerBLat = -1
-
+  var minSafe=1000000.0
   def setPartNum(a: Int) = {
     partition = a
     val (nodeI, nodeJ) = gridIndexer.getNodeIndex(a)
@@ -38,6 +38,8 @@ class DependencyGraph (gridIndexer: GridIndexer) {
     val t = indexToSpatialObj.get((cellI, cellJ)).getOrElse(new SpatialObject, new ListBuffer[SpatialObject])
     indexToSpatialObj.+=(((cellI, cellJ), (spatialObject, t._2)))
     safeRegionCnt += 1
+    if (minSafe> spatialObject.getScore)
+      minSafe = spatialObject.getScore
   }
 
   def addUnsafeRegion(spatialObject: SpatialObject): Unit = {
@@ -58,6 +60,8 @@ class DependencyGraph (gridIndexer: GridIndexer) {
   def addM(spatialObject: SpatialObject): Unit = {
     indexToSpatialObjM.addBinding(gridIndexer.getCellIndex(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
       , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat), spatialObject)
+    if (minSafe> spatialObject.getScore)
+      minSafe = spatialObject.getScore
     addDependentNeighboringCell(spatialObject)
   }
 
@@ -157,6 +161,9 @@ class DependencyGraph (gridIndexer: GridIndexer) {
   def IsOnCornerBorder(spatialObject: SpatialObject): Boolean = {
     gridIndexer.IsOnBorderCorner(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
       , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
+  }
+  def SetMinSafe(a:Int)={
+    minSafe=a
   }
 }
 /*class DependencyGraph (gridIndexer: GridIndexer) {

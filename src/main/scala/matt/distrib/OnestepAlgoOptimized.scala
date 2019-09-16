@@ -53,6 +53,8 @@ object OnestepAlgoOptimized {
     }
     Ans.addAll(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).spatialObjects)
     Ans=Ans.sortBy(_.getScore).reverse
+    System.out.println("unSafe:::"+rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countUnsafe)
+    System.out.println("opt:::"+rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countSafe)
     System.err.println("SingleOpt,"+topk+" eps,"+eps)
     for (i<- 0 to (topk-1)) {
       System.err.println((i+1)+":"+Ans.get(i).getId+"     "+Ans.get(i).getScore);
@@ -66,11 +68,11 @@ object OnestepAlgoOptimized {
   }
 
   def reducer(index: Int, results: Iterable[OneStepResult], gridIndexer: GridIndexer, lvl: Int, base: Int, topK: Int): (Int, OneStepResult) = {
-    var preSafe = 0
+    var opt = 0
     var preUnsafe = 0
     val dependencyGraph = new DependencyGraph(gridIndexer)
     results.foreach(x => {
-      preSafe += x.countSafe
+      opt += x.countSafe
       preUnsafe += x.countUnsafe
     })
     val I = ((index - 1) % width(lvl, base: Int, gridIndexer))
@@ -108,7 +110,7 @@ object OnestepAlgoOptimized {
       }
       pos += 1
     }
-    (index, new OneStepResult(dependencyGraph.safeRegionCnt, unsafe, index, 0, dependencyGraph.getFinalResult()))
+    (index, new OneStepResult(opt, preUnsafe, index, 0, dependencyGraph.getFinalResult()))
   }
 
   def roundUp(d: Double) = math.ceil(d).toInt

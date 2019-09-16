@@ -16,13 +16,15 @@ import org.apache.spark.storage.StorageLevel
 
 object Run {
  def main(args: Array[String]) {
-  System.out.println("******8START-------------------------------------------------------------------------------------------------")
+  System.out.println("******19START-------------------------------------------------------------------------------------------------")
   ///////Param & Config
   //////////////////////////
   Logger.getLogger("org").setLevel(Level.OFF)
   val spark = SparkSession
     .builder
-  //    .master("local[*]")
+
+
+   // .master("local[*]")
     .appName("Simple Application")
     .config("spark.dynamicAllocation.minExecutors", "25")
     .config("spark.dynamicAllocation.executorIdleTimeout", "50000s")

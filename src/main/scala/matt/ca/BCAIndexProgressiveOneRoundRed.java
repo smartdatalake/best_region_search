@@ -98,7 +98,7 @@ public class BCAIndexProgressiveOneRoundRed {
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
 		//System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
-		return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
+		return new OneStepResult(opt1, (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 	}
 
 	private PriorityQueue<Block> initQueue(Grid grid, ScoreFunctionTotalScore<POI> scoreFunction, double eps) {
@@ -215,6 +215,13 @@ public class BCAIndexProgressiveOneRoundRed {
 		}
 		//3rd Condition
 		else if (opt) {
+			if(candidate.getScore()>1) {
+				System.out.println(candidate);
+				System.out.println(border.getOrDefault(new Tuple2(-1, cellInJ - 1), 0.0));
+				System.out.println(border.getOrDefault(new Tuple2(cellInI - 1, g), 0.0));
+				System.out.println(border.getOrDefault(new Tuple2(cellInI - 1, g), 0.0));
+				System.out.println(border.getOrDefault(new Tuple2(cellInI - 1, g), 0.0));
+			}
 			dependencyGraph.addSafeRegion(candidate);
 			dependencyGraph.increaseSafeCNT();
 			opt1++;
