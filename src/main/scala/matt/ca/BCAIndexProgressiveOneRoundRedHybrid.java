@@ -36,6 +36,8 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 
 	public OneStepResult findBestCatchmentAreas(List<POI> pois, int node, double eps, int k, ScoreFunctionTotalScore<POI> scoreFunction,List<SpatialObject> previous) {
 		IsOptimized = false;
+		this.node=node;
+
 		DependencyGraph dependencyGraph = new DependencyGraph(gridIndexer);
 		dependencyGraph.setPartNum(node);
 		if (pois.size() == 0) {
@@ -72,8 +74,13 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
 		if(dependencyGraph.safeRegionCnt()<k||queue.isEmpty()) {
-			//System.err.println(dependencyGraph.getFinalResult());
 			dependencyGraph.SetMinSafe(0);
+		}
+		if(node==89825565 ||node==45710131) {
+			System.out.println(node);
+			System.out.println(dependencyGraph.getFinalResult());
+			System.out.println(queue.size());
+			System.out.println(dependencyGraph.minSafe());
 		}
 		return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()),(int)dependencyGraph.minSafe(), dependencyGraph.getFinalResult());
 	}
@@ -295,7 +302,7 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 			return;
 		} else
 			duplicate.add(myRound(block.envelope.centre().x, 10000) + ":" + myRound(block.envelope.centre().y, 10000) + ":" + block.type);
-
+		candidate.setPart(node);
 		boolean isDistinct = true;
 		int cellI = Integer.parseInt(gridIndexer.getCellIndex(candidate.getGeometry().getCoordinates()[1].x
 				, candidate.getGeometry().getCoordinates()[1].y)._1().toString());
@@ -309,7 +316,6 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 			}
 		if (isDistinct) {
 			int con = dependencyGraph.overlapCon(candidate);
-
 			//1st Condition
 			if (con == 0 && !dependencyGraph.IsBorderRegion(candidate))
 				dependencyGraph.addSafeRegion(candidate);

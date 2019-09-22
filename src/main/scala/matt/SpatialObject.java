@@ -15,6 +15,7 @@ public class SpatialObject implements Comparable<SpatialObject> , Serializable {
 	private String id;
 	private double score;
 	private  Geometry geometry;
+	private int part=-1;
 
 	public SpatialObject() {
 		
@@ -28,7 +29,7 @@ public class SpatialObject implements Comparable<SpatialObject> , Serializable {
 	}
 	@Override
 	public String toString(){
-		return String.valueOf(score)+"id:"+id;
+		return String.valueOf(score)+"id:"+id+"part:"+part;
 	}
 	public String getId() {
 		return id;
@@ -67,6 +68,14 @@ public class SpatialObject implements Comparable<SpatialObject> , Serializable {
 			geometries[i] = objects.get(i).getGeometry();
 		}
 		return geometryFactory.createGeometryCollection(geometries).getEnvelopeInternal();
+	}
+
+	public int getPart() {
+		return part;
+	}
+
+	public void setPart(int part) {
+		this.part = part;
 	}
 
 	@Override

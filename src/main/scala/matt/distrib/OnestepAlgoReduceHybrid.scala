@@ -33,6 +33,7 @@ object OnestepAlgoReduceHybrid {
         lvl += 1
       }
       Ans.addAll(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).spatialObjects)
+      println(Ans.sortBy(_.getScore).reverse)
       Ans=Ans.sortBy(_.getScore).reverse
      // System.err.println("SingleHybrid,"+topk+" eps,"+eps)
  //     for (i<- 0 to Ans.size-1) {

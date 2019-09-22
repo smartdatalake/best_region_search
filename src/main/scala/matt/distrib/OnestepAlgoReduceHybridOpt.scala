@@ -15,6 +15,9 @@ object OnestepAlgoReduceHybridOpt {
 
   def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, previous: ListBuffer[SpatialObject], gridIndexer: GridIndexer): (Int, OneStepResult) = {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
+    for(poi <- pois){
+      poi.setScore(1.0)
+    }
     val scoreFunction = new ScoreFunctionTotalScore[POI]()
     val bcaFinder = new BCAIndexProgressiveOneRoundRedHybrid(true, gridIndexer)
     (input._1, bcaFinder.findBestCatchmentAreas(pois, input._1, eps, topk, scoreFunction, previous))
@@ -22,13 +25,14 @@ object OnestepAlgoReduceHybridOpt {
 
   def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer, base: Int, Kprime: Int) {
     var Ans = ListBuffer[SpatialObject]()
+    var t=0.0
   //  var mapped = new mutable.HashMap[Int, Int]
   //  var used = new mutable.HashMap[Int, Int]
     var round = 1
-    val data=nodeToPoint.groupByKey()
-    data.cache()
     var rdds: Array[RDD[(Int, OneStepResult)]] = new Array[RDD[(Int, OneStepResult)]](base * roundUp(math.log(gridIndexer.width) / math.log(base)) + 1)
-    rdds(0) = data.map(x => oneStepAlgo(x, eps, Kprime, Ans, gridIndexer))
+     t = System.nanoTime()
+    rdds(0) = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, Kprime, Ans, gridIndexer))
+ //   println("round:::"+round+ rdds(0).count()+"   time::::" +(System.nanoTime() - t) / 1000000000)
     rdds(0).cache()
     var lvl=0
     while (Ans.size < topk) {
@@ -36,37 +40,43 @@ object OnestepAlgoReduceHybridOpt {
       // println(rdds(0).count())
       //  println(roundUp(math.log(gridIndexer.width) / math.log(base)))
       while (lvl <= roundUp(math.log(gridIndexer.width) / math.log(base))) {
+        var t = System.nanoTime()
         rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl, base: Int)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, lvl, base, topk, Ans))
         rdds(lvl).cache()
         println(lvl + ":::" + rdds(lvl).count())
         // rdds(lvl-1)=null
         lvl += 1
       }
+      var t = System.nanoTime()
       val roundResults = rdds(lvl - 1).map(x => x._2).collect().toList.get(0).spatialObjects
       Ans.addAll(roundResults)
+   //   println("collecttime::::" +(System.nanoTime() - t) / 1000000000)
 
+      //println(Ans.sortBy(_.getScore).reverse)
       var topKIndex: HashSet[Int] = HashSet();
       for (spatialObject <- roundResults) {
-        val part = gridIndexer.getNodeNumber(spatialObject.getGeometry().getCoordinates().toList(1).x
-          , spatialObject.getGeometry().getCoordinates().toList(1).y)
-        topKIndex.+=(part);
+        topKIndex.+=(spatialObject.getPart);
+        topKIndex.+=(spatialObject.getPart-1);
+        topKIndex.+=(spatialObject.getPart+1);
+        topKIndex.+=(spatialObject.getPart-gridIndexer.width);
+        topKIndex.+=(spatialObject.getPart+gridIndexer.width);
       }
-    //  println(topKIndex)
-      //  var t = System.nanoTime()
-    //  val partialRoundRDD2 = data.filter(x => topKIndex.contains(x._1))
-      //println("filter:" + (System.nanoTime() - t) / 1000000000 )
-      //t = System.nanoTime()
-      val partialRoundRDD =data.filter(x => topKIndex.contains(x._1)).map(x => oneStepAlgo(x, eps, Kprime, Ans, gridIndexer))
-      //println("map:" + (System.nanoTime() - t) / 1000000000 )
-     // println(partialRoundRDD.count())
+      /*gridIndexer.getNodeIndex(spatialObject.getGeometry.getCoordinates.toList(1).x,spatialObject.getGeometry.getCoordinates.toList(1).y)
+  .foreach(x =>topKIndex+=x._2*gridIndexer.width+x._1+1)*/
+   //   println(topKIndex)
+      round += 1
 
-      rdds(0) = rdds(0).union(partialRoundRDD)
-       rdds(0).cache()
+       t = System.nanoTime()
+      val partialRoundRDD = nodeToPoint.groupByKey().filter(x => topKIndex.contains(x._1)).map(x => oneStepAlgo(x, eps, Kprime, Ans, gridIndexer))
+    //  println("filterround:::"+round+"   time::::" +(System.nanoTime() - t) / 1000000000+"count:::::"+ partialRoundRDD.count())
+      t = System.nanoTime()
+      rdds(0) = rdds(0).filter(x => !topKIndex.contains(x._1)).union(partialRoundRDD)
+      rdds(0).cache()
+   //   println("unionround:::"+round+"   time::::" +(System.nanoTime() - t) / 1000000000+"count:::::"+ rdds(0).count())
       //  System.out.println(rdds(0).count())
 
       //rdds= new Array[RDD[(Int, OneStepResult)]](base * roundUp(math.log(gridIndexer.width) / math.log(base)) + 1)
 
-      round += 1
     }
     //imple selecting query partition all partition that have less than k' safe region
     //print out frequency of querying partition and icrease for 3rd 4rth round
@@ -111,7 +121,7 @@ object OnestepAlgoReduceHybridOpt {
     var unsafe = 0
     while (dependencyGraph.safeRegionCnt < topK && pos < candidates.size && candidates.get(pos).getScore >= maxMin) {
       val instance = candidates.get(pos)
-      if ( !Generic.intersectsList(instance,Ans)) {
+    //  if ( !Generic.intersectsList(instance,Ans)) {
         val con = dependencyGraph.overlapCon(instance);
         val (cellI, cellJ) = gridIndexer.getCellIndex(instance.getGeometry.getCoordinates.toList(1).x.toFloat
           , instance.getGeometry.getCoordinates.toList(1).y.toFloat)
@@ -131,7 +141,7 @@ object OnestepAlgoReduceHybridOpt {
             dependencyGraph.increaseSafeCNT();
             dependencyGraph.addM(instance);
           }
-        }
+    //    }
       }
       pos += 1
     }

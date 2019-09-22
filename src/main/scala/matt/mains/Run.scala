@@ -16,7 +16,7 @@ import org.apache.spark.storage.StorageLevel
 
 object Run {
  def main(args: Array[String]) {
-  System.out.println("******19START-------------------------------------------------------------------------------------------------")
+  System.out.println("******30START-------------------------------------------------------------------------------------------------")
   ///////Param & Config
   //////////////////////////
   Logger.getLogger("org").setLevel(Level.OFF)
@@ -24,7 +24,7 @@ object Run {
     .builder
 
 
-   // .master("local[*]")
+    //.master("local[*]")
     .appName("Simple Application")
     .config("spark.dynamicAllocation.minExecutors", "25")
     .config("spark.dynamicAllocation.executorIdleTimeout", "50000s")
@@ -53,6 +53,7 @@ object Run {
   var Kprime=args(5).toInt
   var shift=args(6).toDouble
    val input=args(7)
+  val fraction=args(8).toDouble
   //if(algo==4)
 
 
@@ -82,6 +83,7 @@ object Run {
   println("base: " + base );
   println("k': " + Kprime );
   println("shift': " + shift );
+  println("fraction': " + fraction );
 
 
 
