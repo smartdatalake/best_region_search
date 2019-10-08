@@ -15,9 +15,6 @@ object OnestepAlgoReduceHybridOpt {
 
   def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, previous: ListBuffer[SpatialObject], gridIndexer: GridIndexer): (Int, OneStepResult) = {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
-    for(poi <- pois){
-      poi.setScore(1.0)
-    }
     val scoreFunction = new ScoreFunctionTotalScore[POI]()
     val bcaFinder = new BCAIndexProgressiveOneRoundRedHybrid(true, gridIndexer)
     (input._1, bcaFinder.findBestCatchmentAreas(pois, input._1, eps, topk, scoreFunction, previous))
@@ -32,8 +29,11 @@ object OnestepAlgoReduceHybridOpt {
     var rdds: Array[RDD[(Int, OneStepResult)]] = new Array[RDD[(Int, OneStepResult)]](base * roundUp(math.log(gridIndexer.width) / math.log(base)) + 1)
      t = System.nanoTime()
     rdds(0) = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, Kprime, Ans, gridIndexer))
+    //rdds(0).cache()
+  //  println(rdds(0).map(x=>x._2.countUnsafe+x._2.countSafe).sum())
+    //return
  //   println("round:::"+round+ rdds(0).count()+"   time::::" +(System.nanoTime() - t) / 1000000000)
-    rdds(0).cache()
+
     var lvl=0
     while (Ans.size < topk) {
       lvl = 1;
@@ -49,6 +49,7 @@ object OnestepAlgoReduceHybridOpt {
       }
       var t = System.nanoTime()
       val roundResults = rdds(lvl - 1).map(x => x._2).collect().toList.get(0).spatialObjects
+    //  System.out.println("dependency size:::"+(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countUnsafe))
       Ans.addAll(roundResults)
    //   println("collecttime::::" +(System.nanoTime() - t) / 1000000000)
 
@@ -145,7 +146,7 @@ object OnestepAlgoReduceHybridOpt {
       }
       pos += 1
     }
-    (index, new OneStepResult(dependencyGraph.safeRegionCnt, unsafe, index, maxMin.toInt, dependencyGraph.getFinalResult()))
+    (index, new OneStepResult(preSafe, preUnsafe, index, maxMin.toInt, dependencyGraph.getFinalResult()))
   }
 
   def roundUp(d: Double) = math.ceil(d).toInt

@@ -53,17 +53,6 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 					, spatialObject.getGeometry().getCoordinates()[1].y)._1().toString()+":"+gridIndexer.getCellIndex(spatialObject.getGeometry().getCoordinates()[1].x
 					, spatialObject.getGeometry().getCoordinates()[1].y)._2().toString()),spatialObject);
 		}
-		HashMap<String, POI> temp = new HashMap<>();
-		for (POI poi : pois) {
-			int x = (int)(poi.getPoint().getX()*100000);
-			int y = (int)(poi.getPoint().getY()*100000);
-			if (temp.containsKey(x + ":" + y)) {
-				temp.get(x + ":" + y).increaseScore();
-			} else
-				temp.put(x + ":" + y, poi);
-			pois = new ArrayList<>();
-			pois.addAll(temp.values());
-		}
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
@@ -75,12 +64,6 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 		}
 		if(dependencyGraph.safeRegionCnt()<k||queue.isEmpty()) {
 			dependencyGraph.SetMinSafe(0);
-		}
-		if(node==89825565 ||node==45710131) {
-			System.out.println(node);
-			System.out.println(dependencyGraph.getFinalResult());
-			System.out.println(queue.size());
-			System.out.println(dependencyGraph.minSafe());
 		}
 		return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()),(int)dependencyGraph.minSafe(), dependencyGraph.getFinalResult());
 	}
@@ -118,17 +101,6 @@ public class BCAIndexProgressiveOneRoundRedHybrid {
 		DependencyGraph dependencyGraph = new DependencyGraph(gridIndexer);
 		if (pois.size() == 0) {
 			return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
-		}
-		HashMap<String, POI> temp = new HashMap<>();
-		for (POI poi : pois) {
-			int x = (int)(poi.getPoint().getX()*100000);
-			int y = (int)(poi.getPoint().getY()*100000);
-			if (temp.containsKey(x + ":" + y)) {
-				temp.get(x + ":" + y).increaseScore();
-			} else
-				temp.put(x + ":" + y, poi);
-			pois = new ArrayList<>();
-			pois.addAll(temp.values());
 		}
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		this.node = node;

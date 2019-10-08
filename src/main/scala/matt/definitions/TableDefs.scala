@@ -23,5 +23,13 @@ object TableDefs {
     StructField("longtitude", DoubleType, true),
     StructField("latitude", DoubleType, true),
     StructField("keywords", StringType, true)))
+
+  val customSchema3 = StructType(Array(
+    StructField("id", StringType, true),
+    StructField("name", StringType, true),
+    StructField("longtitude", DoubleType, true),
+    StructField("latitude", DoubleType, true),
+    StructField("keywords", StringType, true),
+    StructField("score", DoubleType, true)))
 }
 

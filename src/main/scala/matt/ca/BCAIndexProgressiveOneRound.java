@@ -41,22 +41,6 @@ public class BCAIndexProgressiveOneRound {
 			topk.add(t);
 			return topk;
 		}
-		//if (pois.size() > 5000) {
-		HashMap<String, POI> temp = new HashMap<>();
-		for (POI poi : pois) {
-			double x = poi.getPoint().getX();
-			double y = poi.getPoint().getY();
-			if (temp.containsValue(x + ":" + y)) {
-				temp.get(x + ":" + y).increaseScore();
-			} else
-				temp.put(x + ":" + y, poi);
-			//	}
-			//	System.err.println("before "+ pois.size());
-			//	System.err.println(temp.size());
-			pois = new ArrayList<>();
-			pois.addAll(temp.values());
-			//	System.err.println("after "+pois.size());
-		}
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);

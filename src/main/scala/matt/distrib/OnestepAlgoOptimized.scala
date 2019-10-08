@@ -43,6 +43,8 @@ object OnestepAlgoOptimized {
     val lvl0 = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer,ttype))
     var rdds: Array[RDD[(Int, OneStepResult)]] = new Array[RDD[(Int, OneStepResult)]](base * roundUp(math.log(gridIndexer.width) / math.log(base)) + 1)
     rdds(0) = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer,ttype))
+  //  println(rdds(0).map(x=>x._2.countUnsafe+x._2.countSafe).sum())
+   //return
     println(roundUp(math.log(gridIndexer.width) / math.log(base)))
     while (lvl <= roundUp(math.log(gridIndexer.width) / math.log(base))) {
       rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl, base: Int)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, lvl, base, topk))
@@ -53,7 +55,7 @@ object OnestepAlgoOptimized {
     }
     Ans.addAll(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).spatialObjects)
     Ans=Ans.sortBy(_.getScore).reverse
-    System.out.println("unSafe:::"+rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countUnsafe)
+ //   System.out.println("dependency size:::"+(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countUnsafe))
     System.out.println("opt:::"+rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countSafe)
     System.err.println("SingleOpt,"+topk+" eps,"+eps)
     for (i<- 0 to (topk-1)) {
@@ -68,11 +70,11 @@ object OnestepAlgoOptimized {
   }
 
   def reducer(index: Int, results: Iterable[OneStepResult], gridIndexer: GridIndexer, lvl: Int, base: Int, topK: Int): (Int, OneStepResult) = {
-    var opt = 0
+    var preSafe = 0
     var preUnsafe = 0
     val dependencyGraph = new DependencyGraph(gridIndexer)
     results.foreach(x => {
-      opt += x.countSafe
+      preSafe += x.countSafe
       preUnsafe += x.countUnsafe
     })
     val I = ((index - 1) % width(lvl, base: Int, gridIndexer))
@@ -110,7 +112,7 @@ object OnestepAlgoOptimized {
       }
       pos += 1
     }
-    (index, new OneStepResult(opt, preUnsafe, index, 0, dependencyGraph.getFinalResult()))
+    (index, new OneStepResult(preSafe, preUnsafe, index, 0, dependencyGraph.getFinalResult()))
   }
 
   def roundUp(d: Double) = math.ceil(d).toInt

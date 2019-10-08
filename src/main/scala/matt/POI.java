@@ -27,7 +27,7 @@ public class POI extends SpatialObject implements Serializable {
 	}
 
 	public String toString() {
-		return this.getId() + ", " + this.getName() + ", " + this.getScore();
+		return this.getId() + ";name;" +this.getPoint().getX()+";"+this.getPoint().getY()+";key;"+getScore();
 	}
 
 	public void increaseScore(){

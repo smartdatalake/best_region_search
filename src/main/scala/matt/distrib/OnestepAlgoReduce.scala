@@ -30,6 +30,8 @@ object OnestepAlgoReduce {
     val lvl0 = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer))
     var rdds: Array[RDD[(Int, OneStepResult)]] = new Array[RDD[(Int, OneStepResult)]](base * roundUp(math.log(gridIndexer.width) / math.log(base)) + 1)
     rdds(0) = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer))
+   // println(rdds(0).map(x=>x._2.countUnsafe+x._2.countSafe).sum())
+//    return
     println(roundUp(math.log(gridIndexer.width) / math.log(base)))
     while (lvl <= roundUp(math.log(gridIndexer.width) / math.log(base))) {
       rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl, base: Int)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, lvl, base, topk))
@@ -40,7 +42,7 @@ object OnestepAlgoReduce {
     }
     Ans.addAll(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).spatialObjects)
     Ans=Ans.sortBy(_.getScore).reverse
-    System.out.println("unSafe:::"+rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countUnsafe)
+ //   System.out.println("dependency size:::"+(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countUnsafe))
     System.err.println("Single,"+topk+" eps,"+eps)
     for (i<- 0 to (topk-1)) {
       System.err.println((i+1)+":"+Ans.get(i).getId+"     "+Ans.get(i).getScore);
@@ -96,7 +98,7 @@ object OnestepAlgoReduce {
       }
       pos += 1
     }
-    (index, new OneStepResult(dependencyGraph.safeRegionCnt, preUnsafe, index, 0, dependencyGraph.getFinalResult()))
+    (index, new OneStepResult(preSafe, preUnsafe, index, 0, dependencyGraph.getFinalResult()))
   }
 
   def roundUp(d: Double) = math.ceil(d).toInt

@@ -44,17 +44,6 @@ public class BCAIndexProgressiveOneRoundRed {
 			topk.add(t);
 			return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 		}
-		HashMap<String, POI> temp = new HashMap<>();
-		for (POI poi : pois) {
-			int x = (int)(poi.getPoint().getX()*100000);
-			int y = (int)(poi.getPoint().getY()*100000);
-			if (temp.containsKey(x + ":" + y)) {
-				temp.get(x + ":" + y).increaseScore();
-			} else
-				temp.put(x + ":" + y, poi);
-			pois = new ArrayList<>();
-			pois.addAll(temp.values());
-		}
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		Grid grid = new Grid(pois, eps);
 		PriorityQueue<Block> queue = initQueue(grid, scoreFunction, eps);
@@ -72,17 +61,6 @@ public class BCAIndexProgressiveOneRoundRed {
 		if (pois.size() == 0) {
 			return new OneStepResult((int) (dependencyGraph.safeRegionCnt()), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 		}
-		HashMap<String, POI> temp = new HashMap<>();
-        for (POI poi : pois) {
-            int x = (int)(poi.getPoint().getX()*100000);
-            int y = (int)(poi.getPoint().getY()*100000);
-            if (temp.containsKey(x + ":" + y)) {
-                temp.get(x + ":" + y).increaseScore();
-            } else
-                temp.put(x + ":" + y, poi);
-            pois = new ArrayList<>();
-            pois.addAll(temp.values());
-        }
 		geometryFactory = new GeometryFactory(new PrecisionModel(), pois.get(0).getPoint().getSRID());
 		this.node = node;
 		this.border = new HashMap<>();
@@ -98,7 +76,7 @@ public class BCAIndexProgressiveOneRoundRed {
 			processBlock(block, eps, scoreFunction, queue, dependencyGraph);
 		}
 		//System.out.println("Whole poisCNT in node:" + pois.size() + "      safeCnt:" + dependencyGraph.safeRegionCnt() + "         overallCNT:" + overall + "      optimizedDone:" + opt1 + "      unsafeCNT:" + unsafeCNT);
-		return new OneStepResult(opt1, (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
+		return new OneStepResult(dependencyGraph.safeRegionCnt(), (int) (unsafeCNT), (int) (dependencyGraph.partition()), (int) (dependencyGraph.cornerBLat()), dependencyGraph.getFinalResult());
 	}
 
 	private PriorityQueue<Block> initQueue(Grid grid, ScoreFunctionTotalScore<POI> scoreFunction, double eps) {
@@ -215,15 +193,7 @@ public class BCAIndexProgressiveOneRoundRed {
 		}
 		//3rd Condition
 		else if (opt) {
-			if(candidate.getScore()>1) {
-				System.out.println(candidate);
-				System.out.println(border.getOrDefault(new Tuple2(-1, cellInJ - 1), 0.0));
-				System.out.println(border.getOrDefault(new Tuple2(cellInI - 1, g), 0.0));
-				System.out.println(border.getOrDefault(new Tuple2(cellInI - 1, g), 0.0));
-				System.out.println(border.getOrDefault(new Tuple2(cellInI - 1, g), 0.0));
-			}
 			dependencyGraph.addSafeRegion(candidate);
-			dependencyGraph.increaseSafeCNT();
 			opt1++;
 		} else if (con == 2 || dependencyGraph.IsBorderRegion(candidate)) {
 			unsafeCNT++;

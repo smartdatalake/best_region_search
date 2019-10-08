@@ -29,7 +29,13 @@ object Generic {
     val keywords = row.getAs[String]("keywords").split(",").toList;
     return gridIndexer.getNodeIndex(row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"))
       .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id")
-        , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), 1, geometryFactory)))
+        , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), row.getAs[Double]("score"), geometryFactory)))
+  }
+  def poiToKeyValue2(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer): (Int, POI) = {
+    val keywords = row.getAs[String]("keywords").split(",").toList;
+    return gridIndexer.getNodeIndex(row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"))
+      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id")
+        , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), 1, geometryFactory))).head
   }
 
 
@@ -73,7 +79,7 @@ object Generic {
     val keywords = row.getAs[String]("keywords").split(",").toList;
     return gridIndexer.getNodeOptIndex(row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"))
       .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id")
-        , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), 1, geometryFactory)))
+        , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), row.getAs[Double]("score"), geometryFactory)))
   }
 
 
