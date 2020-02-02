@@ -12,7 +12,6 @@ import matt.SpatialObject
 import matt.ca.BCAIndexProgressive
 import matt.score.ScoreFunctionTotalScore
 import matt.definitions.{Generic, GridIndexer}
-
 object NstepAlgo {
   def localAlgo(index:Int,input:  Iterable[POI], eps: Double, topk: Int, finalAnswers: List[SpatialObject],gridIndexer: GridIndexer): (Int,List[SpatialObject]) = {
     val scoreFunction = new ScoreFunctionTotalScore[POI]();

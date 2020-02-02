@@ -2,17 +2,18 @@ package matt.mains
 import java.util
 import java.util.{ArrayList, HashMap}
 
-import matt.POI
+import matt.{POI, SpatialObject}
 import org.apache.spark.sql.SparkSession
 import matt.definitions.GridIndexer
-import org.locationtech.jts.geom.{GeometryFactory, PrecisionModel}
+import org.locationtech.jts.geom.{Geometry, GeometryFactory, PrecisionModel}
 import matt.definitions.TableDefs
 import matt.definitions.Generic
 import org.apache.hadoop.conf.Configuration
 import org.apache.log4j.Logger
 import org.apache.log4j.Level
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
-
 import scala.collection.mutable.ListBuffer
 
 
@@ -26,7 +27,7 @@ object Run {
     .builder
 
 
-   // .master("local[*]")
+    .master("local[*]")
     .appName("Simple Application")
     .config("spark.dynamicAllocation.minExecutors", "25")
     .config("spark.dynamicAllocation.executorIdleTimeout", "50000s")
@@ -41,6 +42,7 @@ object Run {
     .config("spark.shuffle.blockTransferService", "nio")
     .config("spark.worker.cleanup.enabled", "true")
     .getOrCreate()
+
   val hadoopConfig: Configuration = spark.sparkContext.hadoopConfiguration
   hadoopConfig.set("fs.hdfs.impl", classOf[org.apache.hadoop.hdfs.DistributedFileSystem].getName)
   hadoopConfig.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
@@ -51,8 +53,9 @@ object Run {
   val algo = args(3).toInt
   val base = args(4).toInt
   val Kprime = args(5).toInt
-  val shift = args(6).toDouble
-  val input = args(7)
+  val f = args(6).toString
+  val keyword=args(7).toString
+  val input = args(8)
   //if(algo==4)
 
 
@@ -61,8 +64,19 @@ object Run {
 
   //////Read and split CSV coordination to (nodeNumber, POI) (assign poi to each worker)
   ///////////////////////////////////////////////////////////////
-
-  val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema3).load(input).drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null))
+  var inputData = spark.read.format("com.databricks.spark.csv").option("header", "true")
+    .option("inferSchema", "true").option("delimiter", ";").option("nullValue", "null").load(input)
+    .drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null))
+  if(keyword!="null") {
+   inputData = inputData.filter(x => (x.getAs[String]("keywords") != null && x.getAs[String]("keywords").contains(keyword)))
+   if (inputData.count() == 0) {
+    println("0:0;POLYGON ((0 0, 0 0, 0 0, 0 0, 0 0));0.0")
+    println("JobDone")
+    spark.stop()
+    return
+   }
+  }
+  //val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema3).load(input).drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null))
   //  .filter(x => (x.getAs[Double]("longtitude") > -10 && x.getAs[Double]("longtitude") < 35)).filter(x => (x.getAs[Double]("latitude") > 35 && x.getAs[Double]("latitude") < 80))//.filter(x => (x.getAs[Double]("longtitude")> -0.489 && x.getAs[Double]("longtitude")< 0.236)).filter(x => (x.getAs[Double]("latitude")> 51.28 && x.getAs[Double]("latitude")< 51.686));//;
   //var inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema2).load(poiInputFile).drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null))//.filter(x => (x.getAs[Double]("longtitude") > -10 && x.getAs[Double]("longtitude") < 35)).filter(x => (x.getAs[Double]("latitude") > 35 && x.getAs[Double]("latitude") < 80))//.filter(x => (x.getAs[Double]("longtitude") > -0.489 && x.getAs[Double]("longtitude") < 0.236)).filter(x => (x.getAs[Double]("latitude") > 51.28 && x.getAs[Double]("latitude") < 51.686));
   //  .filter(x => (x.getAs[Double]("longtitude") > -10 && x.getAs[Double]("longtitude") < 35)).filter(x => (x.getAs[Double]("latitude") > 35 && x.getAs[Double]("latitude") < 80))
@@ -70,10 +84,14 @@ object Run {
   val maxLong = inputData.select("longtitude").reduce((x, y) => if (x.getAs[Double]("longtitude") > y.getAs[Double]("longtitude")) x else y).getAs[Double](0)
   val minLat = inputData.select("latitude").reduce((x, y) => if (x.getAs[Double]("latitude") < y.getAs[Double]("latitude")) x else y).getAs[Double](0)
   val maxLat = inputData.select("latitude").reduce((x, y) => if (x.getAs[Double]("latitude") > y.getAs[Double]("latitude")) x else y).getAs[Double](0)
+ // val minLong = inputData.select("lon").reduce((x, y) => if (x.getAs[Double]("lon") < y.getAs[Double]("lon")) x else y).getAs[Double](0)
+ // val maxLong = inputData.select("lon").reduce((x, y) => if (x.getAs[Double]("lon") > y.getAs[Double]("lon")) x else y).getAs[Double](0)
+ // val minLat = inputData.select("lat").reduce((x, y) => if (x.getAs[Double]("lat") < y.getAs[Double]("lat")) x else y).getAs[Double](0)
+ // val maxLat = inputData.select("lat").reduce((x, y) => if (x.getAs[Double]("lat") > y.getAs[Double]("lat")) x else y).getAs[Double](0)
 
-  val minmaxLong = (minLong - eps / shift, maxLong + eps / shift);
+  val minmaxLong = (minLong - eps / 100.0, maxLong + eps / 100.0);
   println("minmaxLONG: " + minmaxLong);
-  val minmaxLat = (minLat - eps / shift, maxLat + eps / shift);
+  val minmaxLat = (minLat - eps / 100.0, maxLat + eps / 100.0);
   println("minmaxLat: " + minmaxLat);
   println("topK: " + topk);
   println("eps: " + eps);
@@ -81,7 +99,9 @@ object Run {
   println("algo: " + algo);
   println("base: " + base);
   println("k': " + Kprime);
-  println("shift': " + shift);
+  println("targetCal: "+f)
+  println("keyword: "+keyword)
+
 
 
 
@@ -90,31 +110,19 @@ object Run {
   val gridIndexer = new GridIndexer(width, eps, minmaxLong, minmaxLat)
   println("partition per cell:" + gridIndexer.gridSizePerCell)
   val geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
-/*  val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer)).groupByKey().map(x=>(x._2.size)).cache();
-  val count=nodeToPoint.count()
-  val  list=nodeToPoint.collect().sortBy(x=>x).reverse
-  //for (i<-list)
-  // println(i)
-  println(nodeToPoint.filter(x=>x<20).count())
-  println(nodeToPoint.max())
-  println(nodeToPoint.min())
-  val avg=nodeToPoint.sum()/nodeToPoint.count()
-  println(avg)
-  println(nodeToPoint.sum())
-  println(math.sqrt(nodeToPoint.map(x=>((x-avg)*(x-avg))/(count-1)).sum()))*/
 
   ///////Start
   //////////////////////////////
 
-  if (algo==0) {
-    val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer));
+  if (algo==0) {//MR
+    val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer,f));
     nodeToPoint.persist(StorageLevel.MEMORY_AND_DISK);
    val t = System.nanoTime()
    matt.distrib.NstepAlgo.Run(nodeToPoint, eps, topk,Kprime, gridIndexer,base);
    println("Nstep:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
   }
-  if (algo == 1) {
-   val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer));
+  if (algo == 1) {//MR Approximate
+   val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer,f));
    nodeToPoint.persist(StorageLevel.MEMORY_AND_DISK);
    val t = System.nanoTime()
    println("sigma 0.9")
@@ -125,58 +133,58 @@ object Run {
    matt.distrib.NstepAlgoApp.Run(nodeToPoint, eps, topk, 0.5, gridIndexer);
    println("NstepApp:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
   }
-  if (algo == 2) {
+  if (algo == 2) { //MR + region upper bound
    val t = System.nanoTime()
    val nodeOptToPoint = inputData.rdd.flatMap(x => Generic.poiOptToKeyValue(x, geometryFactory, gridIndexer));
    nodeOptToPoint.persist(StorageLevel.MEMORY_AND_DISK);
-
    matt.distrib.OnestepAlgoOptimized.Run(nodeOptToPoint, eps, topk, gridIndexer, base, 1)
    println("SingleOpt1(Dim):::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
   }
-  if (algo == 3) {
-   val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer));
+  if (algo == 3) { //SR
+   val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer,f));
    nodeToPoint.persist(StorageLevel.MEMORY_AND_DISK);
    val t = System.nanoTime()
    matt.distrib.OnestepAlgoReduce.Run(nodeToPoint, eps, topk, gridIndexer, base);
    println("Single:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
   }
 
-  if (algo == 4) {
-   val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer));
+  if (algo == 4) { //Hybrid
+   val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer,f));
    nodeToPoint.persist(StorageLevel.MEMORY_AND_DISK);
    val t = System.nanoTime()
    matt.distrib.OnestepAlgoReduceHybrid.Run(nodeToPoint, eps, topk, gridIndexer, base, Kprime);
-   println("SingleHybrid:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
+   println("Hybrid:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
   }
-  if (algo == 5) {
+  if (algo == 5) {//SR + cell upper score
    val t = System.nanoTime()
    val nodeOptToPoint = inputData.rdd.flatMap(x => Generic.poiOptToKeyValue(x, geometryFactory, gridIndexer));
     nodeOptToPoint.persist(StorageLevel.MEMORY_AND_DISK);
 
     matt.distrib.OnestepAlgoOptimized.Run(nodeOptToPoint, eps,  topk, gridIndexer,base,2)
-   println("SingleOpt2:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
+   println("SingleOpt2(Res):::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
   }
-  if (algo==6) {
-   val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer));
+  if (algo==6) {//Hybrid+ send to some partitions
+   val nodeToPoint = inputData.rdd.flatMap(x => Generic.poiToKeyValue(x, geometryFactory, gridIndexer,f));
    nodeToPoint.persist(StorageLevel.MEMORY_AND_DISK);
    val t = System.nanoTime()
    matt.distrib.OnestepAlgoReduceHybridOpt.Run(nodeToPoint, eps, topk, gridIndexer,base,Kprime);
-   println("SingleHybridOpt:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
+   println("HybridOpt:::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
   }
-  if (algo == 7) {
+  if (algo == 7) {//Hybrid+ send to some partitions+ region upper bound
    val nodeOptToPoint = inputData.rdd.flatMap(x => Generic.poiOptToKeyValue(x, geometryFactory, gridIndexer));
    nodeOptToPoint.persist(StorageLevel.MEMORY_AND_DISK);
    val t = System.nanoTime()
    matt.distrib.OnestepAlgoReduceHybridOptOpt.Run(nodeOptToPoint, eps, topk, gridIndexer, base, Kprime, 1);
-   println("SingleHybridOpt(Dim):::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
+   println("HybridOpt(Dim):::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
   }
-  if (algo == 8) {
+  if (algo == 8) {//Hybrid+ send to some partitions+ cell upper bound
    val nodeOptToPoint = inputData.rdd.flatMap(x => Generic.poiOptToKeyValue(x, geometryFactory, gridIndexer));
    nodeOptToPoint.persist(StorageLevel.MEMORY_AND_DISK);
    val t = System.nanoTime()
    matt.distrib.OnestepAlgoReduceHybridOptOpt.Run(nodeOptToPoint, eps, topk, gridIndexer, base, Kprime, 2);
-   println("SingleHybridOpt(Res):::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
+   println("HybridOpt(Res):::       time:" + (System.nanoTime() - t) / 1000000000 + "s          eps:" + eps + "       topk:" + topk + "     cores:" + cores)
   }
+  println("JobDone")
   spark.stop()
  };
 

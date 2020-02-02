@@ -25,11 +25,15 @@ object Generic {
       , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), 1, geometryFactory)))
   }
 
-  def poiToKeyValue(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer): Seq[(Int, POI)] = {
-    val keywords = row.getAs[String]("keywords").split(",").toList;
-    return gridIndexer.getNodeIndex(row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"))
+  def poiToKeyValue(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer,f:String): Seq[(Int, POI)] = {
+  //  val keywords = row.getAs[String]("keywords").split(",").toList;
+    if(f=="count")
+     return gridIndexer.getNodeIndex(row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"))
       .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id")
-        , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), row.getAs[Double]("score"), geometryFactory)))
+        , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), 1.0, geometryFactory)))
+    gridIndexer.getNodeIndex(row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"))
+      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id")
+        , row.getAs[Double]("longtitude"), row.getAs[Double]("latitude"), row.getAs(f).toString.toDouble, geometryFactory)))
   }
   def poiToKeyValue2(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer): (Int, POI) = {
     val keywords = row.getAs[String]("keywords").split(",").toList;

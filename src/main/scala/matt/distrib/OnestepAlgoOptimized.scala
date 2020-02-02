@@ -43,7 +43,7 @@ object OnestepAlgoOptimized {
     val lvl0 = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer,ttype))
     var rdds: Array[RDD[(Int, OneStepResult)]] = new Array[RDD[(Int, OneStepResult)]](base * roundUp(math.log(gridIndexer.width) / math.log(base)) + 1)
     rdds(0) = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer,ttype))
-  //  println(rdds(0).map(x=>x._2.countUnsafe+x._2.countSafe).sum())
+    println(rdds(0).map(x=>x._2.countSafe).sum())
    //return
     println(roundUp(math.log(gridIndexer.width) / math.log(base)))
     while (lvl <= roundUp(math.log(gridIndexer.width) / math.log(base))) {
