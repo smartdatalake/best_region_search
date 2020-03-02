@@ -1,9 +1,2 @@
-[0m[[0m[33mwarn[0m] [0m[0m/home/hamid/IdeaProjects/spark_bestkregion/src/main/scala/matt/mains/Run.scala:65:188: comparing values of types Double and Null using `!=' will always yield true[0m
-[0m[[0m[33mwarn[0m] [0m[0m  val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema3).load(input).drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null))[0m
-[0m[[0m[33mwarn[0m] [0m[0m                                                                                                                                                                                           ^[0m
-[0m[[0m[33mwarn[0m] [0m[0m/home/hamid/IdeaProjects/spark_bestkregion/src/main/scala/matt/mains/Run.scala:65:227: comparing values of types Double and Null using `!=' will always yield true[0m
-[0m[[0m[33mwarn[0m] [0m[0m  val inputData = spark.read.format("csv").option("header", "true").option("delimiter", ";").schema(TableDefs.customSchema3).load(input).drop().filter(x => (x.getAs[Double]("longtitude") != null && x.getAs[Double]("latitude") != null))[0m
-[0m[[0m[33mwarn[0m] [0m[0m                                                                                                                                                                                                                                  ^[0m
-[0m[[0m[33mwarn[0m] [0m[0mtwo warnings found[0m
-[0m[[0m[0minfo[0m] [0m[0m/home/hamid/IdeaProjects/spark_bestkregion/src/main/scala/matt/ca/BCAIndexProgressiveOneRoundRed.java: /home/hamid/IdeaProjects/spark_bestkregion/src/main/scala/matt/ca/BCAIndexProgressiveOneRoundRed.java uses unchecked or unsafe operations.[0m
-[0m[[0m[0minfo[0m] [0m[0m/home/hamid/IdeaProjects/spark_bestkregion/src/main/scala/matt/ca/BCAIndexProgressiveOneRoundRed.java: Recompile with -Xlint:unchecked for details.[0m
+[0m[[0m[0mdebug[0m] [0m[0mAcquiring lock on file /home/hamid/IdeaProjects/spark_bestkregion/project/target/.sbt-compilation-infos/spark_bestkregion-compile/.sbt-idea-lock ...[0m
+[0m[[0m[0mdebug[0m] [0m[0mReleasing lock on file /home/hamid/IdeaProjects/spark_bestkregion/project/target/.sbt-compilation-infos/spark_bestkregion-compile/.sbt-idea-lock.[0m

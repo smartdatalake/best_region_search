@@ -4,7 +4,7 @@
 		module="spatialproject_2.11"
 		revision="1.0"
 		status="integration"
-		publication="20190910192822"
+		publication="20200205112138"
 	>
 		<description>
 		SpatialProject
@@ -30,8 +30,8 @@
 		<artifact name="spatialproject_2.11" type="doc" ext="jar" conf="compile" e:classifier="javadoc"/>
 	</publications>
 	<dependencies>
-		<dependency org="org.scala-lang" name="scala-compiler" rev="2.11.6" conf="scala-tool->default,optional(default)"/>
-		<dependency org="org.scala-lang" name="scala-library" rev="2.11.6" conf="scala-tool->default,optional(default);compile->default(compile)"/>
+		<dependency org="org.scala-lang" name="scala-compiler" rev="2.11.8" conf="scala-tool->default,optional(default)"/>
+		<dependency org="org.scala-lang" name="scala-library" rev="2.11.8" conf="scala-tool->default,optional(default);compile->default(compile)"/>
 		<dependency org="org.apache.spark" name="spark-core_2.11" rev="2.4.0" conf="provided->default(compile)"/>
 		<dependency org="org.apache.spark" name="spark-sql_2.11" rev="2.4.0" conf="compile->default(compile)"/>
 		<dependency org="org.apache.spark" name="spark-mllib_2.11" rev="2.4.0" conf="compile->default(compile)"/>
@@ -42,5 +42,6 @@
 		<dependency org="junit" name="junit" rev="3.8.1" conf="compile->default(compile)"/>
 		<dependency org="org.apache.hadoop" name="hadoop-hdfs" rev="2.6.0" conf="compile->default(compile)"/>
 		<dependency org="com.madhukaraphatak" name="java-sizeof_2.11" rev="0.1" conf="compile->default(compile)"/>
+		<dependency org="org.apache.spark" name="spark-core_2.11" rev="2.0.2" conf="compile->default(compile)"/>
 	</dependencies>
 </ivy-module>
