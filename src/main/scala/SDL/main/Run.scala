@@ -13,7 +13,7 @@ import org.apache.log4j.Level
 import org.apache.spark.storage.StorageLevel
 
 import scala.collection.mutable.ListBuffer
-
+//https://hamidshj@bitbucket.org/hamidshj/hamid.git
 object Run {
  def main(args: Array[String]) {
 //  BRSInvoker.CalBRS("local","/home/hamid/SpatialProject.jar",Seq("").toArray)
