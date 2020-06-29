@@ -24,7 +24,7 @@ object Run {
   Logger.getLogger("org").setLevel(Level.OFF)
   val spark = SparkSession
     .builder
-
+ 
 
     .master("local[*]")
     .appName("Simple Application")
