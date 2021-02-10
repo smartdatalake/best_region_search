@@ -14,7 +14,7 @@ object OnestepAlgoOptimized {
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
 
-  def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, gridIndexer: GridIndexer,ttype:Int): (Int,OneStepResult) = {
+  def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, gridIndexer: GridIndexer, ttype: Int): (Int, OneStepResult) = {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
     val scoreFunction = new ScoreFunctionTotalScore[POI]()
     val (inside, border) = dividePOIs(input, gridIndexer)
@@ -37,15 +37,15 @@ object OnestepAlgoOptimized {
     return (input._1, bcaFinder.findBestCatchmentAreas(pois, eps, 1, scoreFunction).get(0))
   }
 
-  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer,base:Int, ttype:Int) {
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer, base: Int, ttype: Int) {
     var Ans = ListBuffer[SpatialObject]()
     var lvl = 1;
-    val lvl0 = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer,ttype))
+    val lvl0 = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer, ttype))
     var rdds: Array[RDD[(Int, OneStepResult)]] = new Array[RDD[(Int, OneStepResult)]](base * roundUp(math.log(gridIndexer.width) / math.log(base)) + 1)
-    rdds(0) = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer,ttype))
+    rdds(0) = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, topk, gridIndexer, ttype))
     //println(rdds(0).map(x=>x._2.countSafe).sum())
-   //return
-  //  println(roundUp(math.log(gridIndexer.width) / math.log(base)))
+    //return
+    //  println(roundUp(math.log(gridIndexer.width) / math.log(base)))
     while (lvl <= roundUp(math.log(gridIndexer.width) / math.log(base))) {
       rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl, base: Int)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, lvl, base, topk))
       rdds(lvl).cache()
@@ -54,14 +54,17 @@ object OnestepAlgoOptimized {
       lvl += 1
     }
     Ans.addAll(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).spatialObjects)
-    Ans=Ans.sortBy(_.getScore).reverse
- //   System.out.println("dependency size:::"+(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countUnsafe))
+    Ans = Ans.sortBy(_.getScore).reverse
+    //   System.out.println("dependency size:::"+(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countUnsafe))
     //System.out.println("opt:::"+rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countSafe)
     //System.err.println("SingleOpt,"+topk+" eps,"+eps)
-    System.out.println("{")
-    for (i <- 0 to (topk - 1))
-      System.out.println("{\n\"rank\":"+(i + 1) + ",\n\"center\":[" + Ans.get(i).getGeometry.getCentroid.getX+","+Ans.get(i).getGeometry.getCentroid.getY + "],\n\"score\":" + Ans.get(i).getScore+"\n}");
-    System.out.println("}")
+    System.out.println("[")
+    for (i <- 0 to (topk - 1)) {
+      System.out.println("{\n\"rank\":" + (i + 1) + ",\n\"center\":[" + Ans.get(i).getGeometry.getCentroid.getX + "," + Ans.get(i).getGeometry.getCentroid.getY + "],\n\"score\":" + Ans.get(i).getScore + "\n}")
+      if (i != topk - 1)
+        print(',')
+    };
+    System.out.println("]")
   }
 
   def mapper(index: Int, result: OneStepResult, gridIndexer: GridIndexer, lvl: Int, base: Int): (Int, OneStepResult) = {
@@ -172,11 +175,11 @@ object OnestepAlgoOptimized {
     val output = new ListBuffer[BorderResult]
     for (((cellInI, cellInJ), pois) <- poisInCell) {
       if (cellInI == -1 || cellInI == gridIndexer.gridSizePerCell || cellInJ == -1 || cellInI == gridIndexer.gridSizePerCell) {
-        var upper=0.0
-        poisInCell.get((cellInI, cellInJ)).getOrElse(new ListBuffer[POI]).foreach(x=>upper+=x.getScore)
-        poisInCell.get((cellInI+1, cellInJ)).getOrElse(new ListBuffer[POI]).foreach(x=>upper+=x.getScore)
-        poisInCell.get((cellInI+1, cellInJ+1)).getOrElse(new ListBuffer[POI]).foreach(x=>upper+=x.getScore)
-        poisInCell.get((cellInI, cellInJ+1)).getOrElse(new ListBuffer[POI]).foreach(x=>upper+=x.getScore)
+        var upper = 0.0
+        poisInCell.get((cellInI, cellInJ)).getOrElse(new ListBuffer[POI]).foreach(x => upper += x.getScore)
+        poisInCell.get((cellInI + 1, cellInJ)).getOrElse(new ListBuffer[POI]).foreach(x => upper += x.getScore)
+        poisInCell.get((cellInI + 1, cellInJ + 1)).getOrElse(new ListBuffer[POI]).foreach(x => upper += x.getScore)
+        poisInCell.get((cellInI, cellInJ + 1)).getOrElse(new ListBuffer[POI]).foreach(x => upper += x.getScore)
         output.add(new BorderResult(cellInI, cellInJ, upper))
       }
     }

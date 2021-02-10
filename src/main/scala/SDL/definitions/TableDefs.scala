@@ -1,14 +1,6 @@
 package SDL.definitions
 
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.{ Encoder, Encoders }
-import org.apache.spark.sql.functions.{ when, lower, min, max }
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.Row
 
 object TableDefs {
   val customSchema = StructType(Array(

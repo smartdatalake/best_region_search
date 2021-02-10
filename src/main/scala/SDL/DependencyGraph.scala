@@ -3,9 +3,9 @@ package SDL
 import SDL.definitions.{Generic, GridIndexer}
 
 import scala.collection.mutable
-import collection.mutable.{HashMap, ListBuffer, MultiMap, Set}
+import scala.collection.mutable.{HashMap, ListBuffer, MultiMap, Set}
 
-class DependencyGraph (gridIndexer: GridIndexer) {
+class DependencyGraph(gridIndexer: GridIndexer) {
   val indexToSpatialObj = new HashMap[(Int, Int), (SpatialObject, ListBuffer[SpatialObject])]
   // val indexToSpatialObjSafe = new HashMap[(Int, Int), Set[SpatialObject]] with MultiMap[(Int, Int), SpatialObject]
   // val indexToSpatialObjUnsafe = new HashMap[(Int, Int), Set[SpatialObject]] with MultiMap[(Int, Int), SpatialObject]
@@ -18,14 +18,15 @@ class DependencyGraph (gridIndexer: GridIndexer) {
   var cornerALat = -1
   var cornerBLong = -1
   var cornerBLat = -1
-  var minSafe=1000000.0
+  var minSafe = 1000000.0
+
   def setPartNum(a: Int) = {
     partition = a
     val (nodeI, nodeJ) = gridIndexer.getNodeIndex(a)
     cornerALong = nodeI * gridIndexer.gridSizePerCell
-    cornerALat=nodeJ * gridIndexer.gridSizePerCell
+    cornerALat = nodeJ * gridIndexer.gridSizePerCell
     cornerBLong = cornerALong + gridIndexer.gridSizePerCell - 1
-    cornerBLat= cornerALat + gridIndexer.gridSizePerCell - 1
+    cornerBLat = cornerALat + gridIndexer.gridSizePerCell - 1
   }
 
   def increaseSafeCNT() = {
@@ -38,7 +39,7 @@ class DependencyGraph (gridIndexer: GridIndexer) {
     val t = indexToSpatialObj.get((cellI, cellJ)).getOrElse(new SpatialObject, new ListBuffer[SpatialObject])
     indexToSpatialObj.+=(((cellI, cellJ), (spatialObject, t._2)))
     safeRegionCnt += 1
-    if (minSafe> spatialObject.getScore)
+    if (minSafe > spatialObject.getScore)
       minSafe = spatialObject.getScore
   }
 
@@ -60,7 +61,7 @@ class DependencyGraph (gridIndexer: GridIndexer) {
   def addM(spatialObject: SpatialObject): Unit = {
     indexToSpatialObjM.addBinding(gridIndexer.getCellIndex(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
       , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat), spatialObject)
-    if (minSafe> spatialObject.getScore)
+    if (minSafe > spatialObject.getScore)
       minSafe = spatialObject.getScore
     addDependentNeighboringCell(spatialObject)
   }
@@ -162,10 +163,12 @@ class DependencyGraph (gridIndexer: GridIndexer) {
     gridIndexer.IsOnBorderCorner(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
       , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
   }
-  def SetMinSafe(a:Int)={
-    minSafe=a
+
+  def SetMinSafe(a: Int) = {
+    minSafe = a
   }
 }
+
 /*class DependencyGraph (gridIndexer: GridIndexer) {
  // val indexToSpatialObj = new HashMap[(Int, Int), (SpatialObject,SpatialObject)] with MultiMap[(Int, Int), SpatialObject]
   val indexToSpatialObjSafe = new HashMap[(Int, Int), Set[SpatialObject]] with MultiMap[(Int, Int), SpatialObject]

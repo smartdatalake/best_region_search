@@ -12,7 +12,7 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 
 object OnestepAlgoReduceHybridOptOpt {
 
-  def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, previous: ListBuffer[SpatialObject], gridIndexer: GridIndexer,ttype:Int): (Int, OneStepResult) = {
+  def oneStepAlgo(input: (Int, Iterable[POI]), eps: Double, topk: Int, previous: ListBuffer[SpatialObject], gridIndexer: GridIndexer, ttype: Int): (Int, OneStepResult) = {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
     val scoreFunction = new ScoreFunctionTotalScore[POI]()
     val (inside, border) = dividePOIs(input, gridIndexer)
@@ -25,21 +25,21 @@ object OnestepAlgoReduceHybridOptOpt {
     (input._1, bcaFinder.findBestCatchmentAreas(inside, borderInfo, input._1, eps, topk, scoreFunction).asInstanceOf[OneStepResult])
   }
 
-  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer, base: Int, Kprime: Int,ttype:Int) {
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer, base: Int, Kprime: Int, ttype: Int) {
     var Ans = ListBuffer[SpatialObject]()
-    var t=0.0
+    var t = 0.0
     //  var mapped = new mutable.HashMap[Int, Int]
     //  var used = new mutable.HashMap[Int, Int]
     var round = 1
     var rdds: Array[RDD[(Int, OneStepResult)]] = new Array[RDD[(Int, OneStepResult)]](base * roundUp(math.log(gridIndexer.width) / math.log(base)) + 1)
     t = System.nanoTime()
-    rdds(0) = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, Kprime, Ans, gridIndexer,ttype))
+    rdds(0) = nodeToPoint.groupByKey().map(x => oneStepAlgo(x, eps, Kprime, Ans, gridIndexer, ttype))
     rdds(0).cache()
     //println(rdds(0).map(x=>x._2.countUnsafe+x._2.countSafe).sum())
     //return
     //   println("round:::"+round+ rdds(0).count()+"   time::::" +(System.nanoTime() - t) / 1000000000)
 
-    var lvl=0
+    var lvl = 0
     while (Ans.size < topk) {
       lvl = 1;
       // println(rdds(0).count())
@@ -54,7 +54,7 @@ object OnestepAlgoReduceHybridOptOpt {
       }
       var t = System.nanoTime()
       val roundResults = rdds(lvl - 1).map(x => x._2).collect().toList.get(0).spatialObjects
-    //  System.out.println("dependency size:::"+(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countUnsafe))
+      //  System.out.println("dependency size:::"+(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).countUnsafe))
       Ans.addAll(roundResults)
       //   println("collecttime::::" +(System.nanoTime() - t) / 1000000000)
 
@@ -62,10 +62,10 @@ object OnestepAlgoReduceHybridOptOpt {
       var topKIndex: HashSet[Int] = HashSet();
       for (spatialObject <- roundResults) {
         topKIndex.+=(spatialObject.getPart);
-        topKIndex.+=(spatialObject.getPart-1);
-        topKIndex.+=(spatialObject.getPart+1);
-        topKIndex.+=(spatialObject.getPart-gridIndexer.width);
-        topKIndex.+=(spatialObject.getPart+gridIndexer.width);
+        topKIndex.+=(spatialObject.getPart - 1);
+        topKIndex.+=(spatialObject.getPart + 1);
+        topKIndex.+=(spatialObject.getPart - gridIndexer.width);
+        topKIndex.+=(spatialObject.getPart + gridIndexer.width);
       }
       /*gridIndexer.getNodeIndex(spatialObject.getGeometry.getCoordinates.toList(1).x,spatialObject.getGeometry.getCoordinates.toList(1).y)
   .foreach(x =>topKIndex+=x._2*gridIndexer.width+x._1+1)*/
@@ -73,7 +73,7 @@ object OnestepAlgoReduceHybridOptOpt {
       round += 1
 
       t = System.nanoTime()
-      val partialRoundRDD = nodeToPoint.groupByKey().filter(x => topKIndex.contains(x._1)).map(x => oneStepAlgo(x, eps, Kprime, Ans, gridIndexer,ttype))
+      val partialRoundRDD = nodeToPoint.groupByKey().filter(x => topKIndex.contains(x._1)).map(x => oneStepAlgo(x, eps, Kprime, Ans, gridIndexer, ttype))
       //  println("filterround:::"+round+"   time::::" +(System.nanoTime() - t) / 1000000000+"count:::::"+ partialRoundRDD.count())
       t = System.nanoTime()
       rdds(0) = rdds(0).filter(x => !topKIndex.contains(x._1)).union(partialRoundRDD)
@@ -88,18 +88,22 @@ object OnestepAlgoReduceHybridOptOpt {
     //print out frequency of querying partition and icrease for 3rd 4rth round
     Ans = Ans.sortBy(_.getScore).reverse
     System.err.println("SingleHybridOpt," + topk + " eps," + eps)
-    System.out.println("{")
-    for (i <- 0 to (topk - 1))
-      System.out.println("{\n\"rank\":"+(i + 1) + ",\n\"center\":[" + Ans.get(i).getGeometry.getCentroid.getX+","+Ans.get(i).getGeometry.getCentroid.getY + "],\n\"score\":" + Ans.get(i).getScore+"\n}");
-    System.out.println("}")
+    System.out.println("[")
+    for (i <- 0 to (topk - 1)) {
+      System.out.println("{\n\"rank\":" + (i + 1) + ",\n\"center\":[" + Ans.get(i).getGeometry.getCentroid.getX + "," + Ans.get(i).getGeometry.getCentroid.getY + "],\n\"score\":" + Ans.get(i).getScore + "\n}")
+      if (i != topk - 1)
+        print(',')
+    };
+    System.out.println("]")
     //  Ans.sortBy(_.getScore).reverse.foreach(x => System.err.println(x.getId + ":::::::" + x.getScore))
   }
+
   def mapper(index: Int, result: OneStepResult, gridIndexer: GridIndexer, lvl: Int, base: Int): (Int, OneStepResult) = {
     val (nodeI, nodeJ) = ((index - 1) % width(lvl - 1, base: Int, gridIndexer), ((index - 1) / width(lvl - 1, base: Int, gridIndexer).asInstanceOf[Double]).toInt)
     ((nodeI / base).toInt + (nodeJ / base).toInt * width(lvl, base: Int, gridIndexer) + 1, result)
   }
 
-  def reducer(index: Int, results: Iterable[OneStepResult], gridIndexer: GridIndexer, lvl: Int, base: Int, topK: Int,Ans:ListBuffer[SpatialObject]): (Int, OneStepResult) = {
+  def reducer(index: Int, results: Iterable[OneStepResult], gridIndexer: GridIndexer, lvl: Int, base: Int, topK: Int, Ans: ListBuffer[SpatialObject]): (Int, OneStepResult) = {
     var preSafe = 0
     var preUnsafe = 0
     val dependencyGraph = new DependencyGraph(gridIndexer)
@@ -116,8 +120,8 @@ object OnestepAlgoReduceHybridOptOpt {
     var maxMin = 0.0
     var minlocal = 200000.0
     results.foreach(x => {
-      if(maxMin<x.minSafe)
-        maxMin=x.minSafe
+      if (maxMin < x.minSafe)
+        maxMin = x.minSafe
     })
     var candidates = new ListBuffer[SpatialObject]
     results.foreach(x => candidates.addAll(x.spatialObjects))
@@ -126,27 +130,27 @@ object OnestepAlgoReduceHybridOptOpt {
     var unsafe = 0
     while (dependencyGraph.safeRegionCnt < topK && pos < candidates.size && candidates.get(pos).getScore >= maxMin) {
       val instance = candidates.get(pos)
-      //  if ( !Generic.intersectsList(instance,Ans)) {
-      val con = dependencyGraph.overlapCon(instance);
-      val (cellI, cellJ) = gridIndexer.getCellIndex(instance.getGeometry.getCoordinates.toList(1).x.toFloat
-        , instance.getGeometry.getCoordinates.toList(1).y.toFloat)
-      if (con == 0 && !(cellI == cornerALong || cellI == cornerBLong || cellJ == cornerALat || cellJ == cornerBLat))
-        dependencyGraph.addSafeRegion(instance)
-      else if (con == 1) {
-        val a = 0
-      }
-      else if (con == 2 || (cellI == cornerALong || cellI == cornerBLong || cellJ == cornerALat || cellJ == cornerBLat)) {
-        dependencyGraph.addUnsafeRegion(instance);
-        unsafe += 1
-        if (dependencyGraph.IsDependencyIncluded(instance)) {
-          // Do not add Safe
-          // Do not add M
-          var a = 0
-        } else {
-          dependencyGraph.increaseSafeCNT();
-          dependencyGraph.addM(instance);
+      if (!Generic.intersectsList(instance, Ans)) {
+        val con = dependencyGraph.overlapCon(instance);
+        val (cellI, cellJ) = gridIndexer.getCellIndex(instance.getGeometry.getCoordinates.toList(1).x.toFloat
+          , instance.getGeometry.getCoordinates.toList(1).y.toFloat)
+        if (con == 0 && !(cellI == cornerALong || cellI == cornerBLong || cellJ == cornerALat || cellJ == cornerBLat))
+          dependencyGraph.addSafeRegion(instance)
+        else if (con == 1) {
+          val a = 0
         }
-        //    }
+        else if (con == 2 || (cellI == cornerALong || cellI == cornerBLong || cellJ == cornerALat || cellJ == cornerBLat)) {
+          dependencyGraph.addUnsafeRegion(instance);
+          unsafe += 1
+          if (dependencyGraph.IsDependencyIncluded(instance)) {
+            // Do not add Safe
+            // Do not add M
+            var a = 0
+          } else {
+            dependencyGraph.increaseSafeCNT();
+            dependencyGraph.addM(instance);
+          }
+        }
       }
       pos += 1
     }
@@ -161,6 +165,7 @@ object OnestepAlgoReduceHybridOptOpt {
       width = roundUp(width / base.asInstanceOf[Double])
     return width
   }
+
   def dividePOIs(input: (Int, Iterable[POI]), gridIndexer: GridIndexer): (ListBuffer[POI], HashMap[(Int, Int), ListBuffer[POI]]) = {
     val pois = ListBuffer(input._2.toList: _*)
     val inside = new ListBuffer[POI]
@@ -209,11 +214,11 @@ object OnestepAlgoReduceHybridOptOpt {
     val output = new ListBuffer[BorderResult]
     for (((cellInI, cellInJ), pois) <- poisInCell) {
       if (cellInI == -1 || cellInI == gridIndexer.gridSizePerCell || cellInJ == -1 || cellInI == gridIndexer.gridSizePerCell) {
-        var upper=0.0
-        poisInCell.get((cellInI, cellInJ)).getOrElse(new ListBuffer[POI]).foreach(x=>upper+=x.getScore)
-        poisInCell.get((cellInI+1, cellInJ)).getOrElse(new ListBuffer[POI]).foreach(x=>upper+=x.getScore)
-        poisInCell.get((cellInI+1, cellInJ+1)).getOrElse(new ListBuffer[POI]).foreach(x=>upper+=x.getScore)
-        poisInCell.get((cellInI, cellInJ+1)).getOrElse(new ListBuffer[POI]).foreach(x=>upper+=x.getScore)
+        var upper = 0.0
+        poisInCell.get((cellInI, cellInJ)).getOrElse(new ListBuffer[POI]).foreach(x => upper += x.getScore)
+        poisInCell.get((cellInI + 1, cellInJ)).getOrElse(new ListBuffer[POI]).foreach(x => upper += x.getScore)
+        poisInCell.get((cellInI + 1, cellInJ + 1)).getOrElse(new ListBuffer[POI]).foreach(x => upper += x.getScore)
+        poisInCell.get((cellInI, cellInJ + 1)).getOrElse(new ListBuffer[POI]).foreach(x => upper += x.getScore)
         output.add(new BorderResult(cellInI, cellInJ, upper))
       }
     }

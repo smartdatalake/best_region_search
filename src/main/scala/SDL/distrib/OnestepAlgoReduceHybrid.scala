@@ -1,9 +1,9 @@
 package SDL.distrib
 
-import SDL.{DependencyGraph, POI, SpatialObject}
 import SDL.ca.BCAIndexProgressiveOneRoundRedHybrid
 import SDL.definitions.GridIndexer
 import SDL.score.{OneStepResult, ScoreFunctionTotalScore}
+import SDL.{DependencyGraph, POI, SpatialObject}
 import org.apache.spark.rdd.RDD
 
 import scala.collection.JavaConversions._
@@ -15,10 +15,10 @@ object OnestepAlgoReduceHybrid {
     val pois: java.util.List[POI] = ListBuffer(input._2.toList: _*)
     val scoreFunction = new ScoreFunctionTotalScore[POI]()
     val bcaFinder = new BCAIndexProgressiveOneRoundRedHybrid(true, gridIndexer)
-    (input._1, bcaFinder.findBestCatchmentAreas(pois, input._1, eps, topk, scoreFunction,previous))
+    (input._1, bcaFinder.findBestCatchmentAreas(pois, input._1, eps, topk, scoreFunction, previous))
   }
 
-  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer, base: Int,Kprime:Int) {
+  def Run(nodeToPoint: RDD[(Int, POI)], eps: Double, topk: Int, gridIndexer: GridIndexer, base: Int, Kprime: Int) {
     var Ans = ListBuffer[SpatialObject]()
     while (Ans.size < topk) {
       var lvl = 1;
@@ -29,26 +29,26 @@ object OnestepAlgoReduceHybrid {
         rdds(lvl) = rdds(lvl - 1).map(x => mapper(x._1, x._2, gridIndexer, lvl, base: Int)).groupByKey().map(x => reducer(x._1, x._2, gridIndexer, lvl, base, topk))
         rdds(lvl).cache()
         println(lvl + ":::" + rdds(lvl).count())
-        rdds(lvl-1)=null
+        rdds(lvl - 1) = null
         lvl += 1
       }
       Ans.addAll(rdds(lvl - 1).map(x => x._2).collect().toList.get(0).spatialObjects)
-     // println(Ans.sortBy(_.getScore).reverse)
-      Ans=Ans.sortBy(_.getScore).reverse
-     // System.err.println("SingleHybrid,"+topk+" eps,"+eps)
- //     for (i<- 0 to Ans.size-1) {
- //       System.err.println((i+1)+":"+Ans.get(i).getId+"     "+Ans.get(i).getScore);
+      // println(Ans.sortBy(_.getScore).reverse)
+      Ans = Ans.sortBy(_.getScore).reverse
+      // System.err.println("SingleHybrid,"+topk+" eps,"+eps)
+      //     for (i<- 0 to Ans.size-1) {
+      //       System.err.println((i+1)+":"+Ans.get(i).getId+"     "+Ans.get(i).getScore);
 
-  //    }
+      //    }
     }
-    Ans=Ans.sortBy(_.getScore).reverse
-    System.out.println("Hybrid,k:"+topk+" eps:"+eps)
-    for (i<- 0 to (topk-1)) {
+    Ans = Ans.sortBy(_.getScore).reverse
+    System.out.println("Hybrid,k:" + topk + " eps:" + eps)
+    for (i <- 0 to (topk - 1)) {
       //System.err.println((i+1)+":"+Ans.get(i).getId+"     "+Ans.get(i).getScore);
       System.out.println(Ans.get(i).toString);
 
     }
-  //  Ans.sortBy(_.getScore).reverse.foreach(x => System.err.println(x.getId + ":::::::" + x.getScore))
+    //  Ans.sortBy(_.getScore).reverse.foreach(x => System.err.println(x.getId + ":::::::" + x.getScore))
   }
 
   def mapper(index: Int, result: OneStepResult, gridIndexer: GridIndexer, lvl: Int, base: Int): (Int, OneStepResult) = {
@@ -73,8 +73,8 @@ object OnestepAlgoReduceHybrid {
     var maxMin = 0.0
     var minlocal = 200000.0
     results.foreach(x => {
-    if(maxMin<x.minSafe)
-      maxMin=x.minSafe
+      if (maxMin < x.minSafe)
+        maxMin = x.minSafe
     })
     var candidates = new ListBuffer[SpatialObject]
     results.foreach(x => candidates.addAll(x.spatialObjects))
@@ -105,7 +105,7 @@ object OnestepAlgoReduceHybrid {
       }
       pos += 1
     }
-    (index, new OneStepResult(dependencyGraph.safeRegionCnt, unsafe, index,maxMin.toInt, dependencyGraph.getFinalResult()))
+    (index, new OneStepResult(dependencyGraph.safeRegionCnt, unsafe, index, maxMin.toInt, dependencyGraph.getFinalResult()))
   }
 
   def roundUp(d: Double) = math.ceil(d).toInt

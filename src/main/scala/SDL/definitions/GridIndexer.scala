@@ -5,7 +5,7 @@ import org.locationtech.jts.geom.Point
 
 import scala.collection.mutable.ListBuffer
 
-class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val minmaxLat:(Double,Double)) extends Serializable {
+class GridIndexer(val width: Int, val eps: Any, val minmaxLong: (Double, Double), val minmaxLat: (Double, Double)) extends Serializable {
   val dataSize = math.max((minmaxLat._2 - minmaxLat._1), (minmaxLong._2 - minmaxLong._1))
   val cellSize = eps.asInstanceOf[Double]
   val p = cellSize / dataSize.asInstanceOf[Double]
@@ -52,7 +52,7 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
       result += ((nodeI - 1, nodeJ - 1))
     if ((nodeI != 0 && (cellInI == 0 || cellInI == 1)) && (nodeJ != width - 1 && cellInJ == gridSizePerCell - 1))
       result += ((nodeI - 1, nodeJ + 1))
-    if ( (nodeI != width - 1 && cellInI == gridSizePerCell - 1) && (nodeJ != width - 1 && (cellInJ == 0 || cellInJ == 1)))
+    if ((nodeI != width - 1 && cellInI == gridSizePerCell - 1) && (nodeJ != width - 1 && (cellInJ == 0 || cellInJ == 1)))
       result += ((nodeI + 1, nodeJ - 1))
     if ((nodeI != width - 1 && cellInI == gridSizePerCell - 1) && (nodeJ != width - 1 && cellInJ == gridSizePerCell - 1))
       result += ((nodeI + 1, nodeJ + 1))
@@ -143,33 +143,33 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
     return result
   }
 
-  def get3BorderPartition(node:Int,pois: Iterable[POI]): Seq[((Int,Int),Iterable[POI])] = {
+  def get3BorderPartition(node: Int, pois: Iterable[POI]): Seq[((Int, Int), Iterable[POI])] = {
     val right = new ListBuffer[POI]()
     val down = new ListBuffer[POI]()
     val corner = new ListBuffer[POI]()
-    val result=new ListBuffer[((Int,Int),Iterable[POI])]()
+    val result = new ListBuffer[((Int, Int), Iterable[POI])]()
     for (poi <- pois) {
-      val (cellIin,cellJin)=getCellIndexInGrid(node,poi)
-      if ((cellIin==gridSizePerCell) || (cellIin==gridSizePerCell-1))
+      val (cellIin, cellJin) = getCellIndexInGrid(node, poi)
+      if ((cellIin == gridSizePerCell) || (cellIin == gridSizePerCell - 1))
         right += (poi)
-      if ((cellJin==gridSizePerCell) || (cellJin==gridSizePerCell-1))
+      if ((cellJin == gridSizePerCell) || (cellJin == gridSizePerCell - 1))
         down += (poi)
-      if (((cellIin==gridSizePerCell) || (cellIin==gridSizePerCell-1))
-        && ((cellJin==gridSizePerCell) || (cellJin==gridSizePerCell-1)))
+      if (((cellIin == gridSizePerCell) || (cellIin == gridSizePerCell - 1))
+        && ((cellJin == gridSizePerCell) || (cellJin == gridSizePerCell - 1)))
         corner += (poi)
     }
-  /*  for (poi <- pois.toList) {
-      val (cellI,cellJ) =getCellIndexInGrid(node, poi.getPoint.getX, poi.getPoint.getY)
-      if (cellI==gridSizePerCell||cellI==gridSizePerCell-1)
-        right(cellJ)(cellI-gridSizePerCell+1)+=1
-      if (cellJ==gridSizePerCell||cellJ==gridSizePerCell-1)
-        down(cellJ-gridSizePerCell+1)(cellI)+=1
-      if (((cellI==gridSizePerCell||cellI==gridSizePerCell-1))&&((cellJ==gridSizePerCell||cellJ==gridSizePerCell-1)))
-        corner(cellJ-gridSizePerCell+1)(cellI-gridSizePerCell+1)+=1
-    }*/
-    result+=(((node,0),right))
-    result+=(((node,1),down))
-    result+=(((node,2),corner))
+    /*  for (poi <- pois.toList) {
+        val (cellI,cellJ) =getCellIndexInGrid(node, poi.getPoint.getX, poi.getPoint.getY)
+        if (cellI==gridSizePerCell||cellI==gridSizePerCell-1)
+          right(cellJ)(cellI-gridSizePerCell+1)+=1
+        if (cellJ==gridSizePerCell||cellJ==gridSizePerCell-1)
+          down(cellJ-gridSizePerCell+1)(cellI)+=1
+        if (((cellI==gridSizePerCell||cellI==gridSizePerCell-1))&&((cellJ==gridSizePerCell||cellJ==gridSizePerCell-1)))
+          corner(cellJ-gridSizePerCell+1)(cellI-gridSizePerCell+1)+=1
+      }*/
+    result += (((node, 0), right))
+    result += (((node, 1), down))
+    result += (((node, 2), corner))
     return result
   }
 
@@ -194,20 +194,20 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
     return false
   }
 
-  def getOverlappingBorderPart(node: Int, pois: Iterable[POI]): (Int,(Array[Array[Int]], Array[Array[Int]], Array[Array[Int]])) = {
+  def getOverlappingBorderPart(node: Int, pois: Iterable[POI]): (Int, (Array[Array[Int]], Array[Array[Int]], Array[Array[Int]])) = {
     val right: Array[Array[Int]] = Array.ofDim[Int](gridSizePerCell + 1, 2)
     val down: Array[Array[Int]] = Array.ofDim[Int](2, gridSizePerCell + 1)
     val corner: Array[Array[Int]] = Array.ofDim[Int](2, 2)
     for (poi <- pois.toList) {
-      val (cellI,cellJ) =getCellIndexInGrid(node, poi.getPoint.getX, poi.getPoint.getY)
-      if (cellI==gridSizePerCell||cellI==gridSizePerCell-1)
-        right(cellJ)(cellI-gridSizePerCell+1)+=1
-      if (cellJ==gridSizePerCell||cellJ==gridSizePerCell-1)
-        down(cellJ-gridSizePerCell+1)(cellI)+=1
-      if (((cellI==gridSizePerCell||cellI==gridSizePerCell-1))&&((cellJ==gridSizePerCell||cellJ==gridSizePerCell-1)))
-        corner(cellJ-gridSizePerCell+1)(cellI-gridSizePerCell+1)+=1
+      val (cellI, cellJ) = getCellIndexInGrid(node, poi.getPoint.getX, poi.getPoint.getY)
+      if (cellI == gridSizePerCell || cellI == gridSizePerCell - 1)
+        right(cellJ)(cellI - gridSizePerCell + 1) += 1
+      if (cellJ == gridSizePerCell || cellJ == gridSizePerCell - 1)
+        down(cellJ - gridSizePerCell + 1)(cellI) += 1
+      if (((cellI == gridSizePerCell || cellI == gridSizePerCell - 1)) && ((cellJ == gridSizePerCell || cellJ == gridSizePerCell - 1)))
+        corner(cellJ - gridSizePerCell + 1)(cellI - gridSizePerCell + 1) += 1
     }
-    return (node,(down, right, corner))
+    return (node, (down, right, corner))
   }
 
 
@@ -217,30 +217,34 @@ class GridIndexer(val width:Int, val eps:Any,val minmaxLong:(Double,Double),val 
     var (cellI, cellJ) = getCellIndex(long, lat)
     return ((cellI - nodeI * gridSizePerCell), cellJ - nodeJ * gridSizePerCell)
   }
-  def getCellIndexInGrid(node: Int,spatialObject: SpatialObject): (Int, Int) = {
+
+  def getCellIndexInGrid(node: Int, spatialObject: SpatialObject): (Int, Int) = {
     val nodeI = (node - 1) % width
     val nodeJ = ((node - 1) / width.asInstanceOf[Double]).toInt
-    var a=(0,0)
-    if(spatialObject.getGeometry.isInstanceOf[Point]) {
-       a = getCellIndex(spatialObject.getGeometry.getCentroid.getX, spatialObject.getGeometry.getCentroid.getY)
+    var a = (0, 0)
+    if (spatialObject.getGeometry.isInstanceOf[Point]) {
+      a = getCellIndex(spatialObject.getGeometry.getCentroid.getX, spatialObject.getGeometry.getCentroid.getY)
     }
     else
       a = getCellIndex(spatialObject.getGeometry.getCoordinates.toList(1).x.toFloat
         , spatialObject.getGeometry.getCoordinates.toList(1).y.toFloat)
-    return (a._1-nodeI*gridSizePerCell,a._2-nodeJ*gridSizePerCell)
+    return (a._1 - nodeI * gridSizePerCell, a._2 - nodeJ * gridSizePerCell)
   }
 
-  def getNodeIndex(node:Int):(Int,Int)={
+  def getNodeIndex(node: Int): (Int, Int) = {
     val nodeI = (node - 1) % width
     val nodeJ = ((node - 1) / width.asInstanceOf[Double]).toInt
-    return (nodeI,nodeJ)
+    return (nodeI, nodeJ)
   }
-  def getNodeIndex(node:Int,base:Int):(Int,Int)={
-    return ((node - 1) % roundUp(width/base),((node - 1) / (roundUp(width/base)).asInstanceOf[Double]).toInt)
+
+  def getNodeIndex(node: Int, base: Int): (Int, Int) = {
+    return ((node - 1) % roundUp(width / base), ((node - 1) / (roundUp(width / base)).asInstanceOf[Double]).toInt)
   }
-  def getLonLat(node:Int):(Double,Double)={
-    val (nodeI,nodeJ)=getNodeIndex(node)
-    return (minmaxLong._1 + nodeI*gridSizePerCell*cellSize , minmaxLat._2-nodeJ*gridSizePerCell*cellSize)
+
+  def getLonLat(node: Int): (Double, Double) = {
+    val (nodeI, nodeJ) = getNodeIndex(node)
+    return (minmaxLong._1 + nodeI * gridSizePerCell * cellSize, minmaxLat._2 - nodeJ * gridSizePerCell * cellSize)
   }
+
   def roundUp(d: Double) = math.ceil(d).toInt
 }

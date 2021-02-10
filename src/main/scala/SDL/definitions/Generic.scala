@@ -1,11 +1,11 @@
 package SDL.definitions
 
+import SDL.{POI, SpatialObject}
 import org.apache.spark.sql.Row
+import org.locationtech.jts.geom.GeometryFactory
+
 import scala.collection.JavaConversions._
-import scala.collection.mutable.ListBuffer
-import org.locationtech.jts.geom.GeometryFactory;
-import SDL.POI;
-import SDL.SpatialObject;
+import scala.collection.mutable.ListBuffer;
 
 object Generic {
   def IsInNodeRegion(long: Double, lat: Double, node: Int, gridSize: Double, cellSize: Double, minLong: Double
@@ -25,20 +25,21 @@ object Generic {
       , row.getAs[Double]("lon"), row.getAs[Double]("lat"), 1, geometryFactory)))
   }
 
-  def poiToKeyValue(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer,f:String): Seq[(Int, POI)] = {
-  //  val keywords = row.getAs[String]("keywords").split(",").toList;
-    if(f=="null")
-     return gridIndexer.getNodeIndex(row.getAs[Double]("lon"), row.getAs[Double]("lat"))
-      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id")
-        , row.getAs[Double]("lon"), row.getAs[Double]("lat"), 1.0, geometryFactory)))
+  def poiToKeyValue(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer, f: String): Seq[(Int, POI)] = {
+    //  val keywords = row.getAs[String]("keywords").split(",").toList;
+    if (f == "null")
+      return gridIndexer.getNodeIndex(row.getAs[Double]("lon"), row.getAs[Double]("lat"))
+        .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI("1"
+          , row.getAs[Double]("lon"), row.getAs[Double]("lat"), 1.0, geometryFactory)))
     gridIndexer.getNodeIndex(row.getAs[Double]("lon"), row.getAs[Double]("lat"))
-      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id")
+      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI("1"
         , row.getAs[Double]("lon"), row.getAs[Double]("lat"), row.getAs(f).toString.toDouble, geometryFactory)))
   }
+
   def poiToKeyValue2(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer): (Int, POI) = {
     val keywords = row.getAs[String]("keywords").split(",").toList;
     return gridIndexer.getNodeIndex(row.getAs[Double]("lon"), row.getAs[Double]("lat"))
-      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id")
+      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI("1"
         , row.getAs[Double]("lon"), row.getAs[Double]("lat"), 1, geometryFactory))).head
   }
 
@@ -71,7 +72,7 @@ object Generic {
   }
 
   def intersectsList(point: SpatialObject, list: ListBuffer[SpatialObject]): Boolean = {
-    if(point.getGeometry==null) return false
+    if (point.getGeometry == null) return false
     if (list.size == 0) return false
     for (point2 <- list)
       if (intersects(point, point2))
@@ -79,18 +80,18 @@ object Generic {
     return false
   }
 
-  def poiOptToKeyValue(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer,f:String): Seq[(Int, POI)] = {
-    if(f=="null")
+  def poiOptToKeyValue(row: Row, geometryFactory: GeometryFactory, gridIndexer: GridIndexer, f: String): Seq[(Int, POI)] = {
+    if (f == "null")
       return gridIndexer.getNodeIndex(row.getAs[Double]("lon"), row.getAs[Double]("lat"))
-        .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id")
+        .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI("1"
           , row.getAs[Double]("lon"), row.getAs[Double]("lat"), 1.0, geometryFactory)))
     gridIndexer.getNodeIndex(row.getAs[Double]("lon"), row.getAs[Double]("lat"))
-      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id")
+      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI("1"
         , row.getAs[Double]("lon"), row.getAs[Double]("lat"), row.getAs(f).toString.toDouble, geometryFactory)))
-/*  //  val keywords = row.getAs[String]("keywords").split(",").toList;
-    return gridIndexer.getNodeOptIndex(row.getAs[Double]("lon"), row.getAs[Double]("lat"))
-      .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id")
-        , row.getAs[Double]("lon"), row.getAs[Double]("lat"), 1, geometryFactory)))*/
+    /*  //  val keywords = row.getAs[String]("keywords").split(",").toList;
+        return gridIndexer.getNodeOptIndex(row.getAs[Double]("lon"), row.getAs[Double]("lat"))
+          .map(x => (x._2 * gridIndexer.width + x._1 + 1, new POI(row.getAs[String]("id")
+            , row.getAs[Double]("lon"), row.getAs[Double]("lat"), 1, geometryFactory)))*/
   }
 
 
