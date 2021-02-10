@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/best_region_search.iml" filepath="$PROJECT_DIR$/.idea/best_region_search.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/best_region_search-build.iml" filepath="$PROJECT_DIR$/.idea/modules/best_region_search-build.iml" />
     </modules>
   </component>
 </project>

@@ -1,11 +1,13 @@
 <component name="libraryTable">
   <library name="sbt: org.locationtech.jts.io:jts-io-common:1.16.0:jar">
     <CLASSES>
-      <root url="jar://$USER_HOME$/.ivy2/cache/org.locationtech.jts.io/jts-io-common/jars/jts-io-common-1.16.0.jar!/" />
+      <root url="jar://$USER_HOME$/.cache/coursier/v1/https/repo1.maven.org/maven2/org/locationtech/jts/io/jts-io-common/1.16.0/jts-io-common-1.16.0.jar!/" />
     </CLASSES>
-    <JAVADOC />
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.cache/coursier/v1/https/repo1.maven.org/maven2/org/locationtech/jts/io/jts-io-common/1.16.0/jts-io-common-1.16.0-javadoc.jar!/" />
+    </JAVADOC>
     <SOURCES>
-      <root url="jar://$USER_HOME$/.ivy2/cache/org.locationtech.jts.io/jts-io-common/srcs/jts-io-common-1.16.0-sources.jar!/" />
+      <root url="jar://$USER_HOME$/.cache/coursier/v1/https/repo1.maven.org/maven2/org/locationtech/jts/io/jts-io-common/1.16.0/jts-io-common-1.16.0-sources.jar!/" />
     </SOURCES>
   </library>
 </component>
