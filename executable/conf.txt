@@ -1,0 +1,13 @@
+{
+"sparkSubmit" : "somewhere",
+"SparkMaster" : "IP",
+"partitionCNT" : 100,
+"algo" : 2,
+"dataPath" : "somewhere",
+"jarPath" : "somewhere",
+"port" : 4646,
+"delimiter" = ',',
+"ProteusUsername" : "X",
+"ProteusPassword" : "Y",
+"ProteusURL" : "Z"
+}
