@@ -3,9 +3,11 @@ The BRS service is available via a REST API receiving input parameters in JSON f
 /alive: it checks the status of the BRS service. It has no input parameter.
 
 /changeAlgo: this request selects the BRS algorithm among single round, multi round, hybrid, and uniform grid. The default is hybrid.
+
 algo: 0 for multi-round, 1 for single-round, 2 for hybrid, and 9 for uniform grid. 
 
 /changeMemorySize: it sets the size of RAM assigned for submitting the BRS over the Spark cluster. Default is 10 GB.
+
 memorySize: it indicates the new memory size in GB.
 
 /BRS: this method returns the top k regions that maximize a monotonic scoring function. It is possible for the user to change the source code and separately define the function. By default, it is maximizing the summation of an attribute of items inside regions or frequency of items. The input parameters and their values are sent in JSON format, and the output is the center of top regions formatted as GeoJSON. As the BRS receives a query, it contacts the Proteus server to fetch required columns from the target table, so the table must be accessible from the Proteus instance. The names and definitions of input parameters are:
@@ -40,7 +42,7 @@ ProteusUsername: it is a username to the Proteus server
 
 ProteusPassword: it is a password for the Proteus username
 
-###### Installation and usage
+#### Installation and usage
 The BRS component is implemented in Scala, and it runs on top of Apache Spark. The final version is available as a Docker image hosting Spark instance and as a stand-alone jar file. The BRS service consists of two components: (a) SDL.main, which is a REST API manager, (b) SDL.Run, which is the BRS application and is submittable to a Spark cluster. Next, we first describe how to fetch the source code, install required dependencies, prepare the configuration files, and submit the stand-alone jar file to a Spark cluster for execution. Then, we present the instructions for running the BRS service inside a Docker image.
 
 ###### Stand-alone installation
@@ -77,6 +79,7 @@ The source code is available on the GitHub repository of SmartDataLake. To make 
 “port” : port for listening to REST APIs. It cannot be changed after the installation.
 
 }
+
 8) In command line do:
 
 java -cp BRS_REST_API.jar SDL.main.main
@@ -116,6 +119,7 @@ The BRS service requires a running Spark cluster to execute the stand-alone jar 
 “port” : 4646
 
 }
+
 4) Make a plain file named Dockerfile containing the code below:
 
 FROM gradiant/spark:latest
@@ -133,6 +137,7 @@ COPY avatica-1.13.0.jar /opt/spark-2.4.4-bin-hadoop2.7/local/
 EXPOSE 4646
 
 CMD ["java", "-cp", "/opt/spark-2.4.4-bin-hadoop2.7/local/BRS_REST_API.jar", "SDL.main.main2" , ">>" , "/opt/spark-2.4.4-bin-hadoop2.7/local/out"]
+
 5) Open a command line in the same directory and run:
 
 docker build  -t brs:1.0
