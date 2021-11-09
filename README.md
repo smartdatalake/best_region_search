@@ -83,6 +83,7 @@ The source code is available on the GitHub repository of SmartDataLake. To make 
 8) In command line do:
 
 java -cp BRS_REST_API.jar SDL.main.main
+
 9) The BRS REST API is listening on the port configured in conf.txt. Check the service by sending a GET request at localhost:port/alive
 10) Send your BRS query as a GET request to localhost:port/BRS.
 
